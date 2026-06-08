@@ -139,11 +139,8 @@ function loadQRBase64() {
         });
 }
 
-// ==================== AUTHENTICATION ====================
 function checkLoginState() {
-    // TEMPORARILY BYPASS LOGIN FOR SMOOTH DEVELOPMENT
-    sessionStorage.setItem('pawnshop_logged_in', 'true');
-    const isLoggedIn = true;
+    const isLoggedIn = sessionStorage.getItem('pawnshop_logged_in') === 'true';
     
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
