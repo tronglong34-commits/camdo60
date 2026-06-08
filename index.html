@@ -416,16 +416,28 @@
                             class="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="Tìm theo tên, SĐT, mã hợp đồng, tài sản...">
                     </div>
                     
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-filter"></i> Lọc tài sản:</span>
-                        <select id="filter-asset" onchange="filterActiveContracts()"
-                            class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
-                            <option value="All">Tất cả tài sản</option>
-                            <option value="Honda">Honda (Xe máy)</option>
-                            <option value="Điện thoại">Điện thoại</option>
-                            <option value="Laptop">Laptop</option>
-                            <option value="iPad">iPad</option>
-                        </select>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-filter"></i> Lọc tài sản:</span>
+                            <select id="filter-asset" onchange="filterActiveContracts()"
+                                class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
+                                <option value="All">Tất cả tài sản</option>
+                                <option value="Honda">Honda (Xe máy)</option>
+                                <option value="Điện thoại">Điện thoại</option>
+                                <option value="Laptop">Laptop</option>
+                                <option value="iPad">iPad</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-circle-info"></i> Trạng thái:</span>
+                            <select id="filter-status" onchange="renderActiveContracts()"
+                                class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
+                                <option value="Active">Đang cầm</option>
+                                <option value="Closed">Đã tất toán (chuộc)</option>
+                                <option value="All">Tất cả</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -707,6 +719,9 @@
                     </button>
                     <button id="detail-modal-close-contract-btn" class="px-4 py-2.5 bg-accent-600 hover:bg-accent-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-accent-600/20">
                         <i class="fa-solid fa-box-open"></i> Chuộc Đồ
+                    </button>
+                    <button id="detail-modal-repawn-btn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 hidden">
+                        <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
                     </button>
                     <button onclick="closeContractDetailsModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
                         Đóng

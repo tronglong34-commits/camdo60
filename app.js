@@ -6,6 +6,7 @@ let state = {
 
 // Mode & Status
 let isDemoMode = false;
+let isSubmitting = false;
 let gasUrl = localStorage.getItem('pawnshop_gas_url') || "https://script.google.com/macros/s/AKfycbxSJ30EnzRb4O7QDkvhFqAWYOPWpoUI4St3cD3DvCF6DW9v-J_5sfLCheddzbmCDPdPCg/exec";
 
 // Dummy/Demo Data to show when offline or first time
@@ -315,7 +316,8 @@ async function postToAPI(payload) {
 
 // ==================== INTEREST CALCULATIONS ====================
 function calculateInterest(principal, assetType, days) {
-    if (days <= 0) return 0;
+    // Treat 0 days (or negative days) as 1 day so that the minimum interest rate tier is applied immediately.
+    const calcDays = Math.max(1, days);
     
     if (assetType === 'Honda') {
         let rate10 = 0, rate20 = 0, rate30 = 0;
@@ -332,13 +334,13 @@ function calculateInterest(principal, assetType, days) {
             rate10 = 0.02; rate20 = 0.04; rate30 = 0.05;
         }
         
-        if (days <= 30) {
-            if (days <= 10) return principal * rate10;
-            if (days <= 20) return principal * rate20;
+        if (calcDays <= 30) {
+            if (calcDays <= 10) return principal * rate10;
+            if (calcDays <= 20) return principal * rate20;
             return principal * rate30;
         } else {
-            const cycles = Math.floor(days / 30);
-            const rem = days % 30;
+            const cycles = Math.floor(calcDays / 30);
+            const rem = calcDays % 30;
             let interest = principal * rate30 * cycles;
             if (rem > 0) {
                 if (rem <= 10) interest += principal * rate10;
@@ -348,7 +350,7 @@ function calculateInterest(principal, assetType, days) {
             return interest;
         }
     } else {
-        const weeks = Math.ceil(days / 7);
+        const weeks = Math.max(1, Math.ceil(calcDays / 7));
         return weeks * 0.02 * principal;
     }
 }
@@ -443,19 +445,38 @@ function renderActiveContracts() {
     if (!container) return;
     
     container.innerHTML = "";
-    const active = state.contracts.filter(c => c.Trang_Thai === 'Active');
     
-    if (active.length === 0) {
+    // Read status filter
+    const filterStatus = document.getElementById('filter-status')?.value || 'Active';
+    
+    let filteredList = state.contracts;
+    if (filterStatus === 'Active') {
+        filteredList = state.contracts.filter(c => c.Trang_Thai === 'Active');
+    } else if (filterStatus === 'Closed') {
+        filteredList = state.contracts.filter(c => c.Trang_Thai === 'Closed');
+    } else {
+        filteredList = state.contracts.filter(c => c.Trang_Thai === 'Active' || c.Trang_Thai === 'Closed');
+    }
+    
+    if (filteredList.length === 0) {
         emptyState.classList.remove('hidden');
         return;
     }
     emptyState.classList.add('hidden');
     
-    active.forEach(c => {
+    filteredList.forEach(c => {
         const stats = getContractStats(c);
         const card = document.createElement('div');
-        card.className = "glass-card p-6 rounded-3xl relative overflow-hidden border border-slate-800 bg-slate-800/40 hover:bg-slate-800/60 transition duration-300 flex flex-col justify-between cursor-pointer";
+        
+        const isClosed = c.Trang_Thai === 'Closed';
+        const statusBadge = isClosed 
+            ? `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-700 text-slate-400 border border-slate-600">Đã Tất Toán</span>`
+            : `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
+            
+        card.className = `glass-card p-6 rounded-3xl relative overflow-hidden border ${isClosed ? 'border-slate-800 bg-slate-900/40 opacity-75 hover:opacity-100' : 'border-slate-800 bg-slate-800/40 hover:bg-slate-800/60'} transition duration-300 flex flex-col justify-between cursor-pointer`;
         card.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
+        card.dataset.assetType = c.Loai_Tai_San;
+        card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
         
         let imgHtml = "";
         if (c.Hinh_Anh) {
@@ -467,15 +488,41 @@ function renderActiveContracts() {
             `;
         }
         
+        let buttonsHtml = "";
+        if (isClosed) {
+            buttonsHtml = `
+                <button onclick="event.stopPropagation(); handleRePawn('${c.Ma_HD}')" 
+                    class="w-full py-2.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-600 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-emerald-500/20">
+                    <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
+                </button>
+            `;
+        } else {
+            buttonsHtml = `
+                <button onclick="event.stopPropagation(); openPayInterestModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${stats.accrued - stats.collected})" 
+                    class="py-2.5 bg-brand-500/10 text-brand-400 hover:bg-brand-500 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-brand-500/20">
+                    <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
+                </button>
+                <button onclick="event.stopPropagation(); openCloseContractModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${c.So_Tien_Cam}, ${stats.accrued - stats.collected})"
+                    class="py-2.5 bg-accent-500/10 text-accent-400 hover:bg-accent-500 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-accent-500/20">
+                    <i class="fa-solid fa-box-open"></i> Chuộc Đồ
+                </button>
+            `;
+        }
+        
+        let contractCodeDisplay = isClosed ? `<span class="text-xs text-slate-500 font-semibold ml-1">${c.Ma_HD}</span>` : "";
+        
         card.innerHTML = `
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>
+                    <div class="flex items-center gap-1">
+                        ${statusBadge}
+                        ${contractCodeDisplay}
+                    </div>
                     <span class="text-xs px-2.5 py-0.5 rounded-full font-medium ${c.Loai_Tai_San === 'Honda' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-accent-500/10 text-accent-400 border border-accent-500/20'}">${c.Loai_Tai_San}</span>
                 </div>
                 
                 <div>
-                    <h4 class="text-lg font-bold text-white">${c.Ten_Khach_Hang}</h4>
+                    <h4 class="text-lg font-bold ${isClosed ? 'text-slate-400 line-through' : 'text-white'}">${c.Ten_Khach_Hang}</h4>
                     <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <i class="fa-solid fa-phone text-[10px]"></i> ${c.So_Dien_Thoai}
                     </p>
@@ -487,19 +534,22 @@ function renderActiveContracts() {
                         <span class="text-white font-semibold">${c.Chi_Tiet_Tai_San}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-400">Ngày cầm:</span>
+                        <span class="text-slate-400">Ngày cầm cũ:</span>
                         <span class="text-white font-semibold">${c.Ngay_Cam}</span>
                     </div>
+                    ${isClosed ? '' : `
                     <div class="flex justify-between">
                         <span class="text-slate-400">Số ngày đã cầm:</span>
                         <span class="text-brand-400 font-bold">${stats.days} ngày</span>
                     </div>
+                    `}
                     <div class="flex justify-between border-t border-slate-800 pt-2 text-sm">
-                        <span class="text-slate-400 font-medium">Số tiền cầm:</span>
+                        <span class="text-slate-400 font-medium">Số tiền cầm cũ:</span>
                         <span class="text-emerald-400 font-extrabold">${formatVND(c.So_Tien_Cam)}</span>
                     </div>
                 </div>
 
+                ${isClosed ? '' : `
                 <div class="bg-accent-500/5 p-4 rounded-2xl border border-accent-500/10 space-y-1.5 text-xs">
                     <div class="flex justify-between">
                         <span class="text-slate-400">Lãi tích lũy:</span>
@@ -514,25 +564,61 @@ function renderActiveContracts() {
                         <span class="font-bold text-amber-500">${formatVND(Math.max(0, stats.accrued - stats.collected))}</span>
                     </div>
                 </div>
+                `}
 
                 ${imgHtml}
 
                 ${c.Ghi_Chu ? `<p class="text-[11px] text-slate-500 italic mt-2"><span class="font-semibold not-italic">Ghi chú:</span> ${c.Ghi_Chu}</p>` : ""}
             </div>
             
-            <div class="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-slate-800/50">
-                <button onclick="event.stopPropagation(); openPayInterestModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${stats.accrued - stats.collected})" 
-                    class="py-2.5 bg-brand-500/10 text-brand-400 hover:bg-brand-500 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-brand-500/20">
-                    <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
-                </button>
-                <button onclick="event.stopPropagation(); openCloseContractModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${c.So_Tien_Cam}, ${stats.accrued - stats.collected})"
-                    class="py-2.5 bg-accent-500/10 text-accent-400 hover:bg-accent-500 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-accent-500/20">
-                    <i class="fa-solid fa-box-open"></i> Chuộc Đồ
-                </button>
+            <div class="${isClosed ? 'mt-6 pt-4 border-t border-slate-800/50' : 'grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-slate-800/50'}">
+                ${buttonsHtml}
             </div>
         `;
         container.appendChild(card);
     });
+    
+    // Auto-apply search and asset filters
+    filterActiveContracts();
+}
+
+function handleRePawn(hdId) {
+    const contract = state.contracts.find(c => c.Ma_HD === hdId);
+    if (!contract) return;
+    
+    // Switch to new contract tab
+    switchTab('new-contract');
+    
+    // Prefill form values
+    document.getElementById('customer-name').value = contract.Ten_Khach_Hang;
+    document.getElementById('customer-phone').value = contract.So_Dien_Thoai;
+    document.getElementById('asset-type').value = contract.Loai_Tai_San;
+    
+    // Run updateAssetPlaceholders to ensure correct placeholder is set
+    updateAssetPlaceholders();
+    
+    document.getElementById('asset-detail').value = contract.Chi_Tiet_Tai_San;
+    document.getElementById('loan-amount-input').value = formatNumber(contract.So_Tien_Cam);
+    document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('contract-notes').value = contract.Ghi_Chu || "";
+    
+    // Handle image copying
+    if (contract.Hinh_Anh) {
+        uploadedImageBase64 = contract.Hinh_Anh;
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        
+        const previewContainer = document.getElementById('image-upload-preview-container');
+        const previewImg = document.getElementById('image-upload-preview');
+        previewImg.src = formatImageUrl(contract.Hinh_Anh);
+        previewContainer.classList.remove('hidden');
+    } else {
+        clearUploadedImage();
+    }
+    
+    // Update live preview layout
+    updateReceiptPreview();
+    
+    showToast(`Đã lấy thông tin từ HĐ cũ (${hdId})!`, "success");
 }
 
 function renderPaymentHistory() {
@@ -553,9 +639,11 @@ function renderPaymentHistory() {
     sorted.forEach(item => {
         const row = document.createElement('tr');
         row.className = "hover:bg-slate-800/30 transition duration-150 border-b border-slate-800/80";
+        row.dataset.date = item.Ngay_Dong_Lai || "";
+        row.dataset.searchText = `${item.Ma_Giao_Dich} ${item.Ma_HD} ${item.Ten_Khach_Hang} ${item.Ghi_Chu}`.toLowerCase();
         row.innerHTML = `
             <td class="py-4 px-6 font-semibold text-slate-400 text-xs">${item.Ma_Giao_Dich}</td>
-            <td class="py-4 px-6 text-brand-400 font-bold text-xs">${item.Ma_HD}</td>
+            <td class="py-4 px-6 text-brand-400 font-bold text-xs cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
             <td class="py-4 px-6 text-white font-medium">${item.Ten_Khach_Hang}</td>
             <td class="py-4 px-6 text-slate-400">${item.Ngay_Dong_Lai}</td>
             <td class="py-4 px-6 text-right font-extrabold text-emerald-400">${formatVND(item.So_Tien_Dong)}</td>
@@ -647,7 +735,7 @@ function renderStatistics() {
                 tr.className = "hover:bg-slate-800/20 border-b border-slate-800/50 transition duration-150";
                 tr.innerHTML = `
                     <td class="py-3 text-slate-400">${item.Ngay_Dong_Lai}</td>
-                    <td class="py-3 text-brand-400 font-bold">${item.Ma_HD}</td>
+                    <td class="py-3 text-brand-400 font-bold cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
                     <td class="py-3 text-slate-200 font-medium">${item.Ten_Khach_Hang}</td>
                     <td class="py-3 text-right font-extrabold text-emerald-400">${formatVND(interestAmount)}</td>
                     <td class="py-3 text-[10px] text-slate-400">
@@ -782,82 +870,105 @@ function clearUploadedImage(e) {
 // ==================== TRANSACTION HANDLERS ====================
 async function handleCreateContract(e) {
     e.preventDefault();
+    if (isSubmitting) return;
     
-    const name = document.getElementById('customer-name').value.trim();
-    const phone = document.getElementById('customer-phone').value.trim();
-    const assetType = document.getElementById('asset-type').value;
-    const assetDetail = document.getElementById('asset-detail').value.trim();
-    const rawAmount = document.getElementById('loan-amount-input').value.replace(/,/g, '');
-    const amountVal = parseFloat(rawAmount) || 0;
-    const dateVal = document.getElementById('contract-date').value;
-    const notes = document.getElementById('contract-notes').value.trim();
-    
-    if (amountVal <= 0) {
-        showToast("Số tiền cầm phải lớn hơn 0!", "error");
-        return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
     }
+    isSubmitting = true;
     
-    showLoading(true, "Đang khởi tạo hợp đồng...");
-    
-    let newHdId = "HD0001";
-    if (state.contracts.length > 0) {
-        const ids = state.contracts.map(c => parseInt(c.Ma_HD.replace("HD", "")) || 0);
-        newHdId = "HD" + String(Math.max(...ids) + 1).padStart(4, "0");
-    }
-    
-    const payload = {
-        action: "createContract",
-        Ten_Khach_Hang: name,
-        So_Dien_Thoai: phone,
-        Loai_Tai_San: assetType,
-        Chi_Tiet_Tai_San: assetDetail,
-        So_Tien_Cam: amountVal,
-        Ngay_Cam: dateVal,
-        Ghi_Chu: notes,
-        image_data: uploadedImageBase64,
-        image_name: `pawn_${newHdId}.jpg`
-    };
-    
-    const res = await postToAPI(payload);
-    
-    if (res.success) {
-        const newContract = {
-            Ma_HD: newHdId,
+    try {
+        const name = document.getElementById('customer-name').value.trim();
+        const phone = document.getElementById('customer-phone').value.trim();
+        const assetType = document.getElementById('asset-type').value;
+        const assetDetail = document.getElementById('asset-detail').value.trim();
+        const rawAmount = document.getElementById('loan-amount-input').value.replace(/,/g, '');
+        const amountVal = parseFloat(rawAmount) || 0;
+        const dateVal = document.getElementById('contract-date').value;
+        const notes = document.getElementById('contract-notes').value.trim();
+        
+        if (amountVal <= 0) {
+            showToast("Số tiền cầm phải lớn hơn 0!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        
+        showLoading(true, "Đang khởi tạo hợp đồng...");
+        
+        let newHdId = "HD0001";
+        if (state.contracts.length > 0) {
+            const ids = state.contracts.map(c => parseInt(c.Ma_HD.replace("HD", "")) || 0);
+            newHdId = "HD" + String(Math.max(...ids) + 1).padStart(4, "0");
+        }
+        
+        const payload = {
+            action: "createContract",
             Ten_Khach_Hang: name,
             So_Dien_Thoai: phone,
             Loai_Tai_San: assetType,
             Chi_Tiet_Tai_San: assetDetail,
             So_Tien_Cam: amountVal,
             Ngay_Cam: dateVal,
-            Trang_Thai: "Active",
             Ghi_Chu: notes,
-            Hinh_Anh: uploadedImageBase64
+            image_data: uploadedImageBase64,
+            image_name: `pawn_${newHdId}.jpg`
         };
         
-        state.contracts.push(newContract);
-        localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+        const res = await postToAPI(payload);
         
-        document.getElementById('preview-id').innerText = newHdId;
-        
-        showToast("Đang tải hóa đơn PDF...", "info");
-        
-        // Chờ PDF render xong rồi mới reset form
-        await exportReceiptToPDF(newHdId);
-        
-        const formEl = document.getElementById('new-contract-form');
-        if (formEl) formEl.reset();
-        document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
-        clearUploadedImage();
-        updateReceiptPreview();
-        
-        showToast("Tạo hợp đồng thành công!", "success");
-        switchTab('active-contracts');
-    } else {
-        showToast("Gặp lỗi khi lưu hợp đồng: " + (res.error || "Lỗi API"), "error");
+        if (res.success) {
+            const newContract = {
+                Ma_HD: newHdId,
+                Ten_Khach_Hang: name,
+                So_Dien_Thoai: phone,
+                Loai_Tai_San: assetType,
+                Chi_Tiet_Tai_San: assetDetail,
+                So_Tien_Cam: amountVal,
+                Ngay_Cam: dateVal,
+                Trang_Thai: "Active",
+                Ghi_Chu: notes,
+                Hinh_Anh: uploadedImageBase64
+            };
+            
+            state.contracts.push(newContract);
+            localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+            
+            document.getElementById('preview-id').innerText = newHdId;
+            
+            showToast("Đang tải hóa đơn PDF...", "info");
+            
+            // Chờ PDF render xong rồi mới reset form
+            await exportReceiptToPDF(newHdId);
+            
+            const formEl = document.getElementById('new-contract-form');
+            if (formEl) formEl.reset();
+            document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
+            clearUploadedImage();
+            updateReceiptPreview();
+            
+            showToast("Tạo hợp đồng thành công!", "success");
+            switchTab('active-contracts');
+        } else {
+            showToast("Gặp lỗi khi lưu hợp đồng: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handleCreateContract:", error);
+        showToast("Đã xảy ra lỗi hệ thống khi lưu hợp đồng!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
     }
-    
-    showLoading(false);
-    syncData();
 }
 
 function openPayInterestModal(hdId, customerName, suggestedInterest) {
@@ -880,58 +991,82 @@ function closePayInterestModal() {
 
 async function handlePayInterest(e) {
     e.preventDefault();
-    const hdId = document.getElementById('modal-pay-hd-id').value;
-    const name = document.getElementById('modal-pay-customer-name').value;
-    const rawAmount = document.getElementById('modal-pay-amount-input').value.replace(/,/g, '');
-    const amountVal = parseFloat(rawAmount) || 0;
-    const notes = document.getElementById('modal-pay-notes').value.trim();
+    if (isSubmitting) return;
     
-    if (amountVal <= 0) {
-        showToast("Số tiền đóng phải lớn hơn 0!", "error");
-        return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
     }
+    isSubmitting = true;
     
-    showLoading(true, "Đang xử lý đóng lãi...");
-    
-    let newGdId = "GD0001";
-    if (state.history.length > 0) {
-        const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
-        newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
-    }
-    
-    const payload = {
-        action: "addPayment",
-        Ma_HD: hdId,
-        Ten_Khach_Hang: name,
-        Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
-        So_Tien_Dong: amountVal,
-        Ghi_Chu: notes
-    };
-    
-    const res = await postToAPI(payload);
-    
-    if (res.success) {
-        const newPayment = {
-            Ma_Giao_Dich: newGdId,
+    try {
+        const hdId = document.getElementById('modal-pay-hd-id').value;
+        const name = document.getElementById('modal-pay-customer-name').value;
+        const rawAmount = document.getElementById('modal-pay-amount-input').value.replace(/,/g, '');
+        const amountVal = parseFloat(rawAmount) || 0;
+        const notes = document.getElementById('modal-pay-notes').value.trim();
+        
+        if (amountVal <= 0) {
+            showToast("Số tiền đóng phải lớn hơn 0!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        
+        showLoading(true, "Đang xử lý đóng lãi...");
+        
+        let newGdId = "GD0001";
+        if (state.history.length > 0) {
+            const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
+            newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
+        }
+        
+        const payload = {
+            action: "addPayment",
             Ma_HD: hdId,
             Ten_Khach_Hang: name,
-            Ngay_Dong_Lai: payload.Ngay_Dong_Lai,
+            Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
             So_Tien_Dong: amountVal,
             Ghi_Chu: notes
         };
         
-        state.history.push(newPayment);
-        localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+        const res = await postToAPI(payload);
         
-        closePayInterestModal();
-        showToast("Đã ghi nhận đóng lãi!", "success");
-        switchTab('payment-history');
-    } else {
-        showToast("Lỗi khi ghi nhận đóng lãi: " + (res.error || "Lỗi API"), "error");
+        if (res.success) {
+            const newPayment = {
+                Ma_Giao_Dich: newGdId,
+                Ma_HD: hdId,
+                Ten_Khach_Hang: name,
+                Ngay_Dong_Lai: payload.Ngay_Dong_Lai,
+                So_Tien_Dong: amountVal,
+                Ghi_Chu: notes
+            };
+            
+            state.history.push(newPayment);
+            localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+            
+            closePayInterestModal();
+            showToast("Đã ghi nhận đóng lãi!", "success");
+            switchTab('payment-history');
+        } else {
+            showToast("Lỗi khi ghi nhận đóng lãi: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handlePayInterest:", error);
+        showToast("Đã xảy ra lỗi hệ thống khi đóng lãi!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
     }
-    
-    showLoading(false);
-    syncData();
 }
 
 function openCloseContractModal(hdId, customerName, principal, suggestedInterest) {
@@ -959,62 +1094,86 @@ function closeCloseContractModal() {
 
 async function handleCloseContract(e) {
     e.preventDefault();
-    const hdId = document.getElementById('modal-close-hd-id').value;
-    const name = document.getElementById('modal-close-customer-name').value;
-    const rawAmount = document.getElementById('modal-close-amount-input').value.replace(/,/g, '');
-    const amountVal = parseFloat(rawAmount) || 0;
+    if (isSubmitting) return;
     
-    if (amountVal <= 0) {
-        showToast("Số tiền đóng phải lớn hơn 0!", "error");
-        return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
     }
+    isSubmitting = true;
     
-    showLoading(true, "Đang tất toán hợp đồng...");
-    
-    const payload = {
-        action: "closeContract",
-        Ma_HD: hdId,
-        Ten_Khach_Hang: name,
-        So_Tien_Dong: amountVal
-    };
-    
-    const res = await postToAPI(payload);
-    
-    if (res.success) {
-        const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
-        if (contractIdx > -1) {
-            state.contracts[contractIdx].Trang_Thai = "Closed";
+    try {
+        const hdId = document.getElementById('modal-close-hd-id').value;
+        const name = document.getElementById('modal-close-customer-name').value;
+        const rawAmount = document.getElementById('modal-close-amount-input').value.replace(/,/g, '');
+        const amountVal = parseFloat(rawAmount) || 0;
+        
+        if (amountVal <= 0) {
+            showToast("Số tiền đóng phải lớn hơn 0!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
         }
         
-        let newGdId = "GD0001";
-        if (state.history.length > 0) {
-            const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
-            newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
-        }
+        showLoading(true, "Đang tất toán hợp đồng...");
         
-        const newPayment = {
-            Ma_Giao_Dich: newGdId,
+        const payload = {
+            action: "closeContract",
             Ma_HD: hdId,
             Ten_Khach_Hang: name,
-            Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
-            So_Tien_Dong: amountVal,
-            Ghi_Chu: "Tất toán hợp đồng (Chuộc đồ)"
+            So_Tien_Dong: amountVal
         };
         
-        state.history.push(newPayment);
+        const res = await postToAPI(payload);
         
-        localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
-        localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
-        
-        closeCloseContractModal();
-        showToast("Tất toán hợp đồng thành công!", "success");
-        switchTab('payment-history');
-    } else {
-        showToast("Lỗi tất toán hợp đồng: " + (res.error || "Lỗi API"), "error");
+        if (res.success) {
+            const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
+            if (contractIdx > -1) {
+                state.contracts[contractIdx].Trang_Thai = "Closed";
+            }
+            
+            let newGdId = "GD0001";
+            if (state.history.length > 0) {
+                const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
+                newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
+            }
+            
+            const newPayment = {
+                Ma_Giao_Dich: newGdId,
+                Ma_HD: hdId,
+                Ten_Khach_Hang: name,
+                Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
+                So_Tien_Dong: amountVal,
+                Ghi_Chu: "Tất toán hợp đồng (Chuộc đồ)"
+            };
+            
+            state.history.push(newPayment);
+            
+            localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+            localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+            
+            closeCloseContractModal();
+            showToast("Tất toán hợp đồng thành công!", "success");
+            switchTab('payment-history');
+        } else {
+            showToast("Lỗi tất toán hợp đồng: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handleCloseContract:", error);
+        showToast("Đã xảy ra lỗi hệ thống khi tất toán!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
     }
-    
-    showLoading(false);
-    syncData();
 }
 
 // ==================== SEARCH & FILTERS ====================
@@ -1026,18 +1185,11 @@ function filterActiveContracts() {
     let visibleCount = 0;
     
     for (let card of cards) {
-        const text = card.innerText.toLowerCase();
+        const searchText = card.dataset.searchText || "";
+        const assetType = card.dataset.assetType || "";
         
-        let isAssetMatch = true;
-        if (filterAsset !== 'All') {
-            const html = card.innerHTML;
-            if (filterAsset === 'Honda' && !html.includes('>Honda<')) isAssetMatch = false;
-            if (filterAsset === 'Điện thoại' && !html.includes('>Điện thoại<')) isAssetMatch = false;
-            if (filterAsset === 'Laptop' && !html.includes('>Laptop<')) isAssetMatch = false;
-            if (filterAsset === 'iPad' && !html.includes('>iPad<')) isAssetMatch = false;
-        }
-        
-        const isSearchMatch = text.includes(query);
+        const isAssetMatch = filterAsset === 'All' || assetType === filterAsset;
+        const isSearchMatch = !query || searchText.includes(query);
         
         if (isSearchMatch && isAssetMatch) {
             card.classList.remove('hidden');
@@ -1063,15 +1215,11 @@ function filterHistory() {
     let visibleCount = 0;
     
     for (let row of rows) {
-        const text = row.innerText.toLowerCase();
-        const rowDate = row.children[3]?.innerText || "";
+        const searchText = row.dataset.searchText || "";
+        const rowDate = row.dataset.date || "";
         
-        let isDateMatch = true;
-        if (dateVal && rowDate !== dateVal) {
-            isDateMatch = false;
-        }
-        
-        const isSearchMatch = text.includes(query);
+        const isDateMatch = !dateVal || rowDate === dateVal;
+        const isSearchMatch = !query || searchText.includes(query);
         
         if (isSearchMatch && isDateMatch) {
             row.classList.remove('hidden');
@@ -1159,6 +1307,7 @@ function openContractDetailsModal(hdId) {
     
     const payBtn = document.getElementById('detail-modal-pay-btn');
     const closeHdBtn = document.getElementById('detail-modal-close-contract-btn');
+    const repawnBtn = document.getElementById('detail-modal-repawn-btn');
     
     if (contract.Trang_Thai === 'Active') {
         payBtn.classList.remove('hidden');
@@ -1172,9 +1321,19 @@ function openContractDetailsModal(hdId) {
             closeContractDetailsModal();
             openCloseContractModal(hdId, contract.Ten_Khach_Hang, contract.So_Tien_Cam, stats.accrued - stats.collected);
         };
+        
+        if (repawnBtn) repawnBtn.classList.add('hidden');
     } else {
         payBtn.classList.add('hidden');
         closeHdBtn.classList.add('hidden');
+        
+        if (repawnBtn) {
+            repawnBtn.classList.remove('hidden');
+            repawnBtn.onclick = () => {
+                closeContractDetailsModal();
+                handleRePawn(hdId);
+            };
+        }
     }
     
     document.getElementById('contract-details-modal').classList.remove('hidden');
@@ -1184,39 +1343,58 @@ function closeContractDetailsModal() {
     document.getElementById('contract-details-modal').classList.add('hidden');
 }
 
-function printContractReceipt(contractId) {
+async function printContractReceipt(contractId) {
+    if (isSubmitting) return;
     const contract = state.contracts.find(c => c.Ma_HD === contractId);
     if (!contract) return;
     
-    // Temporarily overwrite receipt preview element
-    document.getElementById('preview-id').innerText = contract.Ma_HD;
-    document.getElementById('preview-name').innerText = contract.Ten_Khach_Hang;
-    document.getElementById('preview-phone').innerText = contract.So_Dien_Thoai;
-    document.getElementById('preview-asset-type').innerText = contract.Loai_Tai_San;
-    document.getElementById('preview-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
-    document.getElementById('preview-date').innerText = contract.Ngay_Cam;
-    
-    const previewDetailLabel = document.getElementById('preview-asset-detail-label');
-    if (previewDetailLabel) {
-        previewDetailLabel.innerText = contract.Loai_Tai_San === 'Honda' ? "Biển số xe:" : "Chi tiết thiết bị:";
+    const printBtn = document.getElementById('detail-modal-print-btn');
+    if (printBtn) {
+        printBtn.disabled = true;
+        printBtn.style.opacity = '0.5';
     }
+    isSubmitting = true;
     
-    const amountVal = parseFloat(contract.So_Tien_Cam) || 0;
-    document.getElementById('preview-amount').innerText = formatVND(amountVal);
-    document.getElementById('preview-amount-words').innerText = numberToWords(amountVal);
-    document.getElementById('preview-signature-name').innerText = contract.Ten_Khach_Hang;
-    
-    const noteEl = document.getElementById('preview-interest-note');
-    if (noteEl) {
-        if (contract.Loai_Tai_San === 'Honda') {
-            noteEl.innerText = "Chu kỳ 30 ngày (lũy tiến)";
-        } else {
-            noteEl.innerText = "Chu kỳ 7 ngày (2.0% / tuần)";
+    try {
+        // Temporarily overwrite receipt preview element
+        document.getElementById('preview-id').innerText = contract.Ma_HD;
+        document.getElementById('preview-name').innerText = contract.Ten_Khach_Hang;
+        document.getElementById('preview-phone').innerText = contract.So_Dien_Thoai;
+        document.getElementById('preview-asset-type').innerText = contract.Loai_Tai_San;
+        document.getElementById('preview-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
+        document.getElementById('preview-date').innerText = contract.Ngay_Cam;
+        
+        const previewDetailLabel = document.getElementById('preview-asset-detail-label');
+        if (previewDetailLabel) {
+            previewDetailLabel.innerText = contract.Loai_Tai_San === 'Honda' ? "Biển số xe:" : "Chi tiết thiết bị:";
         }
+        
+        const amountVal = parseFloat(contract.So_Tien_Cam) || 0;
+        document.getElementById('preview-amount').innerText = formatVND(amountVal);
+        document.getElementById('preview-amount-words').innerText = numberToWords(amountVal);
+        document.getElementById('preview-signature-name').innerText = contract.Ten_Khach_Hang;
+        
+        const noteEl = document.getElementById('preview-interest-note');
+        if (noteEl) {
+            if (contract.Loai_Tai_San === 'Honda') {
+                noteEl.innerText = "Chu kỳ 30 ngày (lũy tiến)";
+            } else {
+                noteEl.innerText = "Chu kỳ 7 ngày (2.0% / tuần)";
+            }
+        }
+        
+        showToast(`Đang xuất hóa đơn PDF cho hợp đồng ${contract.Ma_HD}...`, "info");
+        await exportReceiptToPDF(contract.Ma_HD);
+    } catch (error) {
+        console.error("Lỗi khi xuất PDF:", error);
+        showToast("Không thể xuất hóa đơn PDF!", "error");
+    } finally {
+        if (printBtn) {
+            printBtn.disabled = false;
+            printBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
     }
-    
-    exportReceiptToPDF(contract.Ma_HD);
-    showToast(`Đang xuất hóa đơn PDF cho hợp đồng ${contract.Ma_HD}...`, "success");
 }
 
 // ==================== UI HELPERS ====================
@@ -1559,17 +1737,10 @@ function exportReceiptToPDF(contractId) {
             pdfContainer.parentNode.removeChild(pdfContainer);
         }
         
-        // Upload lên Google Drive (chạy ngầm)
+        // Upload lên Google Drive (chạy ngầm) - Lấy datauristring trực tiếp từ đối tượng pdf đã dựng sẵn
         if (gasUrl && !isDemoMode) {
-            // Tạo lại element để generate PDF data URI
-            const pdfContainer2 = document.createElement('div');
-            pdfContainer2.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
-            pdfContainer2.innerHTML = pdfContainer.innerHTML; // clone lại HTML
-            document.body.appendChild(pdfContainer2);
-            const renderEl2 = pdfContainer2.querySelector('#pdf-render-area');
-            
-            html2pdf().set(opt).from(renderEl2).outputPdf('datauristring').then(function(pdfDataUri) {
-                if (pdfContainer2.parentNode) pdfContainer2.parentNode.removeChild(pdfContainer2);
+            try {
+                const pdfDataUri = pdf.output('datauristring');
                 const payload = {
                     action: "uploadPDF",
                     Ma_HD: contractId,
@@ -1581,10 +1752,9 @@ function exportReceiptToPDF(contractId) {
                         showToast(`Đã lưu hóa đơn ${contractId} lên Google Drive!`, "success");
                     }
                 });
-            }).catch(err => {
-                if (pdfContainer2.parentNode) pdfContainer2.parentNode.removeChild(pdfContainer2);
-                console.error("Lỗi upload PDF lên Drive:", err);
-            });
+            } catch (err) {
+                console.error("Lỗi trích xuất PDF data URI:", err);
+            }
         }
     }).catch(function(err) {
         // Dọn dẹp khi lỗi
