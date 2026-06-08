@@ -1,0 +1,73 @@
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Glassmorphism utilities */
+.glass-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-input {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+    outline: none;
+}
+
+/* Safe area for mobile device home indicator */
+.pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+}
+
+/* Keyframes for animations */
+@keyframes slide-in {
+    from {
+        transform: translateY(1rem) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Print Styling to force A5 layout exactly */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #a5-receipt-preview, #a5-receipt-preview * {
+        visibility: visible;
+    }
+    #a5-receipt-preview {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 148mm;
+        height: 210mm;
+    }
+}
