@@ -1698,46 +1698,46 @@ function exportReceiptToPDF(contractId) {
     document.body.appendChild(pdfContainer);
     
     pdfContainer.innerHTML = `
-    <div id="pdf-render-area" style="width:480px;height:680px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.5;box-sizing:border-box;overflow:hidden;padding:12px;display:flex;flex-direction:column;">
-        <div style="border:2px solid #111;padding:16px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
+    <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.5;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
+        <div style="border:2px solid #111;padding:18px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
         
         <!-- Header cửa hàng -->
-        <div style="text-align:center;margin-bottom:4px;">
-            <div style="font-size:18px;font-weight:800;letter-spacing:2px;color:#111;margin-bottom:1px;">CẦM ĐỒ 60</div>
-            <div style="font-size:9px;color:#555;">ĐC: Số 60 - đường phước thiện - p Long bình</div>
-            <div style="font-size:9px;color:#555;">Hotline/Zalo: 0962772783 LONG</div>
+        <div style="text-align:center;margin-bottom:6px;">
+            <div style="font-size:20px;font-weight:800;letter-spacing:2px;color:#111;margin-bottom:1px;">CẦM ĐỒ 60</div>
+            <div style="font-size:10px;color:#555;">ĐC: Số 60 - đường phước thiện - p Long bình</div>
+            <div style="font-size:10px;color:#555;">Hotline/Zalo: 0962772783 LONG</div>
         </div>
         
         <!-- Đường kẻ -->
         <div style="border-bottom:1.5px solid #333;margin:6px 0;"></div>
         
         <!-- Tiêu đề hợp đồng -->
-        <div style="text-align:center;margin-bottom:8px;">
-            <div style="font-size:15px;font-weight:700;letter-spacing:3px;color:#111;margin-bottom:1px;">HỢP ĐỒNG CẦM ĐỒ</div>
-            <div style="font-size:9px;color:#777;">Mã HĐ: <span style="font-weight:700;color:#222;">${previewId}</span></div>
+        <div style="text-align:center;margin-bottom:10px;">
+            <div style="font-size:18px;font-weight:700;letter-spacing:3px;color:#111;margin-bottom:1px;">HỢP ĐỒNG CẦM ĐỒ</div>
+            <div style="font-size:11px;color:#777;">Mã HĐ: <span style="font-weight:700;color:#222;">${previewId}</span></div>
         </div>
         
         <!-- Thông tin khách hàng -->
-        <table style="width:100%;border-collapse:collapse;margin-bottom:4px;font-size:11px;">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:12.5px;">
             <tr>
-                <td style="padding:2px 0;color:#555;width:40%;">Khách hàng:</td>
-                <td style="padding:2px 0;text-align:right;font-weight:700;color:#111;">${previewName}</td>
+                <td style="padding:3px 0;color:#555;width:40%;">Khách hàng:</td>
+                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewName}</td>
             </tr>
             <tr>
-                <td style="padding:2px 0;color:#555;">Số điện thoại:</td>
-                <td style="padding:2px 0;text-align:right;font-weight:700;color:#111;">${previewPhone}</td>
+                <td style="padding:3px 0;color:#555;">Số điện thoại:</td>
+                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewPhone}</td>
             </tr>
             <tr>
-                <td style="padding:2px 0;color:#555;">Loại tài sản:</td>
-                <td style="padding:2px 0;text-align:right;font-weight:700;color:#111;">${previewAssetType}</td>
+                <td style="padding:3px 0;color:#555;">Loại tài sản:</td>
+                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewAssetType}</td>
             </tr>
             <tr>
-                <td style="padding:2px 0;color:#555;">${previewAssetDetailLabel}</td>
-                <td style="padding:2px 0;text-align:right;font-weight:700;color:#111;">${previewAssetDetail}</td>
+                <td style="padding:3px 0;color:#555;">${previewAssetDetailLabel}</td>
+                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewAssetDetail}</td>
             </tr>
             <tr>
-                <td style="padding:2px 0;color:#555;">Ngày cầm cố:</td>
-                <td style="padding:2px 0;text-align:right;font-weight:700;color:#111;">${previewDate}</td>
+                <td style="padding:3px 0;color:#555;">Ngày cầm cố:</td>
+                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewDate}</td>
             </tr>
         </table>
         
@@ -1745,20 +1745,20 @@ function exportReceiptToPDF(contractId) {
         <div style="border-bottom:1px dashed #bbb;margin:6px 0;"></div>
         
         <!-- Số tiền cầm -->
-        <div style="margin-bottom:2px;">
+        <div style="margin-bottom:4px;">
             <table style="width:100%;border-collapse:collapse;">
                 <tr>
-                    <td style="font-size:12px;font-weight:700;color:#111;padding:3px 0;">SỐ TIỀN CẦM</td>
-                    <td style="font-size:15px;font-weight:800;color:#0a7c42;text-align:right;padding:3px 0;">${previewAmount}</td>
+                    <td style="font-size:14px;font-weight:700;color:#111;padding:4px 0;">SỐ TIỀN CẦM</td>
+                    <td style="font-size:18px;font-weight:800;color:#0a7c42;text-align:right;padding:4px 0;">${previewAmount}</td>
                 </tr>
             </table>
-            <div style="text-align:right;font-size:9px;color:#555;font-style:italic;margin-top:1px;">
+            <div style="text-align:right;font-size:10px;color:#555;font-style:italic;margin-top:1px;">
                 (Bằng chữ: <span style="font-weight:600;color:#333;">${previewAmountWords}</span>)
             </div>
-            <table style="width:100%;border-collapse:collapse;margin-top:3px;">
+            <table style="width:100%;border-collapse:collapse;margin-top:4px;">
                 <tr>
-                    <td style="font-size:10px;color:#555;padding:2px 0;">Lãi suất thỏa thuận:</td>
-                    <td style="font-size:10px;font-weight:600;color:#333;text-align:right;padding:2px 0;">${previewInterestNote}</td>
+                    <td style="font-size:11.5px;color:#555;padding:2px 0;">Lãi suất thỏa thuận:</td>
+                    <td style="font-size:11.5px;font-weight:600;color:#333;text-align:right;padding:2px 0;">${previewInterestNote}</td>
                 </tr>
             </table>
         </div>
@@ -1767,9 +1767,9 @@ function exportReceiptToPDF(contractId) {
         <div style="border-bottom:1px dashed #bbb;margin:6px 0;"></div>
         
         <!-- Điều khoản -->
-        <div style="margin-bottom:6px;">
-            <div style="font-size:10px;font-weight:700;color:#333;margin-bottom:3px;">ĐIỀU KHOẢN THỎA THUẬN:</div>
-            <div style="font-size:8.5px;color:#555;padding-left:4px;line-height:1.5;">
+        <div style="margin-bottom:8px;">
+            <div style="font-size:11.5px;font-weight:700;color:#333;margin-bottom:4px;">ĐIỀU KHOẢN THỎA THUẬN:</div>
+            <div style="font-size:9.5px;color:#555;padding-left:4px;line-height:1.5;">
                 1. Khách hàng cam kết tài sản cầm cố là tài sản hợp pháp.<br>
                 2. Lãi suất được tính theo biểu phí công khai của cửa hàng.<br>
                 3. Kỳ hạn đóng lãi định kỳ đúng ngày. Quá hạn 15 ngày không đóng lãi hoặc gia hạn hợp đồng, cửa hàng có toàn quyền thanh lý tài sản để thu hồi nợ.<br>
@@ -1779,24 +1779,24 @@ function exportReceiptToPDF(contractId) {
         
         <!-- QR Code -->
         <div style="text-align:center;margin:6px 0;">
-            <div style="font-size:8px;color:#777;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
-            <img src="${qrBase64}" style="width:80px;height:80px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
+            <div style="font-size:9px;color:#777;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
+            <img src="${qrBase64}" style="width:90px;height:90px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
         </div>
         
         <!-- Chữ ký -->
         <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:12px;">
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:top;">
-                    <div style="font-size:10px;font-weight:600;color:#444;">ĐẠI DIỆN CỬA HÀNG</div>
-                    <div style="font-size:8px;color:#999;margin-top:1px;">(Ký và ghi rõ họ tên)</div>
-                    <div style="height:40px;"></div>
-                    <div style="font-size:11px;font-weight:700;color:#111;">CẦM ĐỒ 60</div>
+                    <div style="font-size:11.5px;font-weight:600;color:#444;">ĐẠI DIỆN CỬA HÀNG</div>
+                    <div style="font-size:9px;color:#999;margin-top:1px;">(Ký và ghi rõ họ tên)</div>
+                    <div style="height:45px;"></div>
+                    <div style="font-size:12.5px;font-weight:700;color:#111;">CẦM ĐỒ 60</div>
                 </td>
                 <td style="width:50%;text-align:center;vertical-align:top;">
-                    <div style="font-size:10px;font-weight:600;color:#444;">KHÁCH HÀNG CẦM ĐỒ</div>
-                    <div style="font-size:8px;color:#999;margin-top:1px;">(Ký và ghi rõ họ tên)</div>
-                    <div style="height:40px;"></div>
-                    <div style="font-size:11px;font-weight:700;color:#111;">${previewSignatureName}</div>
+                    <div style="font-size:11.5px;font-weight:600;color:#444;">KHÁCH HÀNG CẦM ĐỒ</div>
+                    <div style="font-size:9px;color:#999;margin-top:1px;">(Ký và ghi rõ họ tên)</div>
+                    <div style="height:45px;"></div>
+                    <div style="font-size:12.5px;font-weight:700;color:#111;">${previewSignatureName}</div>
                 </td>
             </tr>
         </table>
