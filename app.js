@@ -310,6 +310,11 @@ async function syncData() {
                 localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
                 localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
                 
+                console.log("=== DANH SÁCH HỢP ĐỒNG ĐÃ ĐỒNG BỘ ===");
+                state.contracts.forEach(c => {
+                    console.log(`Mã HĐ: ${c.Ma_HD} | Khách: ${c.Ten_Khach_Hang} | Hinh_Anh:`, c.Hinh_Anh ? c.Hinh_Anh.substring(0, 100) + (c.Hinh_Anh.length > 100 ? "..." : "") : "Trống");
+                });
+                
                 showToast("Đồng bộ thành công!", "success");
             } else {
                 throw new Error(resData.error || "Lỗi không xác định");
@@ -511,14 +516,24 @@ function renderActiveContracts() {
         card.dataset.assetType = c.Loai_Tai_San;
         card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
         
+
         let imgHtml = "";
         if (c.Hinh_Anh) {
             const displayUrl = formatImageUrl(c.Hinh_Anh);
-            imgHtml = `
-                <div class="mt-4 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900/60 h-28 cursor-zoom-in" onclick="event.stopPropagation(); openLightbox('${displayUrl}')">
-                    <img src="${displayUrl}" class="w-full h-full object-cover">
-                </div>
-            `;
+            if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
+                imgHtml = `
+                    <div class="mt-4 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900/60 h-28 cursor-zoom-in" onclick="event.stopPropagation(); openLightbox('${displayUrl}')">
+                        <img src="${displayUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex flex-col items-center justify-center text-[10px] text-slate-500 bg-slate-900/40 p-2 text-center\'><i class=\'fa-solid fa-image-slash text-base mb-1\'></i>Lỗi tải ảnh Google Drive<br>(Vui lòng kiểm tra quyền chia sẻ)</div>';">
+                    </div>
+                `;
+            } else if (c.Hinh_Anh.startsWith("Lỗi")) {
+                imgHtml = `
+                    <div class="mt-4 p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-[10px] flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Lưu ảnh thất bại: ${c.Hinh_Anh.replace("Lỗi lưu ảnh: ", "")}</span>
+                    </div>
+                `;
+            }
         }
         
         let buttonsHtml = "";
@@ -1309,11 +1324,14 @@ function openContractDetailsModal(hdId) {
     const imgContainer = document.getElementById('detail-modal-image-container');
     if (contract.Hinh_Anh) {
         const displayUrl = formatImageUrl(contract.Hinh_Anh);
-        imgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')">`;
+        if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
+            imgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-4\'><i class=\'fa-solid fa-image-slash text-2xl mb-2\'></i><span>Không thể tải ảnh từ Google Drive (Hãy kiểm tra lại quyền chia sẻ thư mục)</span></div>';">`;
+        } else {
+            imgContainer.innerHTML = `<span class="text-red-400 text-xs">${contract.Hinh_Anh}</span>`;
+        }
     } else {
         imgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh đính kèm</span>`;
     }
-    
     // Load transaction history for this contract
     const historyBody = document.getElementById('detail-modal-history-body');
     historyBody.innerHTML = "";
