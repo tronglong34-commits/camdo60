@@ -874,9 +874,9 @@ function updateReceiptPreview() {
     const noteEl = document.getElementById('preview-interest-note');
     if (noteEl) {
         if (assetType === 'Honda') {
-            noteEl.innerText = "Chu kỳ 30 ngày (lũy tiến)";
+            noteEl.innerText = "Chu kỳ 30 ngày";
         } else {
-            noteEl.innerText = "Chu kỳ 7 ngày (2.0% / tuần)";
+            noteEl.innerText = "Chu kỳ 7 ngày";
         }
     }
 }
@@ -1469,9 +1469,9 @@ async function printContractReceipt(contractId) {
         const noteEl = document.getElementById('preview-interest-note');
         if (noteEl) {
             if (contract.Loai_Tai_San === 'Honda') {
-                noteEl.innerText = "Chu kỳ 30 ngày (lũy tiến)";
+                noteEl.innerText = "Chu kỳ 30 ngày";
             } else {
-                noteEl.innerText = "Chu kỳ 7 ngày (2.0% / tuần)";
+                noteEl.innerText = "Chu kỳ 7 ngày";
             }
         }
         
