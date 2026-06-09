@@ -355,3 +355,11 @@ function doPost(e) {
     });
   }
 }
+
+// HÀM TEST ĐỂ KÍCH HOẠT CẤP QUYỀN
+function testDrivePermission() {
+  // Hàm này dùng để kích hoạt bảng cấp quyền truy cập Google Drive.
+  // Trong giao diện Apps Script, bạn chọn hàm này ở ô chọn trên thanh công cụ và bấm nút "Run" (Chạy).
+  var root = DriveApp.getRootFolder();
+  Logger.log("Đã kết nối Google Drive thành công! Thư mục gốc: " + root.getName());
+}
