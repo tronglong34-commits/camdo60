@@ -1807,7 +1807,7 @@ function exportReceiptToPDF(contractId) {
     const renderEl = pdfContainer.querySelector('#pdf-render-area');
     
     const opt = {
-        margin: [10, 10, 10, 10],
+        margin: [0, 0, 0, 0],
         filename: `HoaDon_${contractId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
