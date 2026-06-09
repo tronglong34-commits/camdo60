@@ -72,34 +72,75 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-    // Bind real-time currency formatting with focus/blur pattern to prevent all Gboard duplication / IME issues
+    // Bind real-time currency formatting with caret preservation to prevent all cursor-jumping & Gboard duplication / IME issues
     const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            // Strip commas on focus so user can edit raw number smoothly
+            let lastValue = el.value;
+
             el.addEventListener('focus', function() {
-                this.value = this.value.replace(/,/g, '');
+                lastValue = this.value;
             });
 
-            // Format with commas on blur so it displays nicely
-            el.addEventListener('blur', function() {
-                const clean = this.value.replace(/\D/g, '');
-                if (clean !== "") {
-                    const parsed = parseInt(clean, 10);
-                    this.value = isNaN(parsed) ? "" : formatNumber(parsed);
-                }
-                updateReceiptPreview();
-            });
-
-            // Strip non-digits on input but do not add commas to avoid cursor/duplication glitches
             el.addEventListener('input', function() {
-                const clean = this.value.replace(/\D/g, '');
-                if (this.value !== clean) {
-                    const start = this.selectionStart;
-                    this.value = clean;
-                    this.setSelectionRange(start - 1, start - 1);
+                let value = this.value;
+                let cursorPosition = this.selectionStart;
+
+                // 1. If value hasn't changed, do nothing
+                if (value === lastValue) {
+                    return;
                 }
+
+                // 2. Count digits after cursor in current raw text
+                let digitsAfterCursor = 0;
+                for (let i = cursorPosition; i < value.length; i++) {
+                    if (/\d/.test(value[i])) {
+                        digitsAfterCursor++;
+                    }
+                }
+
+                // Extract only digits
+                const lastClean = lastValue.replace(/\D/g, '');
+                const newClean = value.replace(/\D/g, '');
+                let finalClean = newClean;
+
+                // 3. Comma-deletion correction:
+                // If a deletion occurred (length decreased) but the digit count is the same,
+                // it means a comma (or formatting char) was deleted.
+                // We should programmatically delete the digit to the left of the deleted comma.
+                if (value.length < lastValue.length && lastClean.length === newClean.length) {
+                    const cleanCursorPos = newClean.length - digitsAfterCursor;
+                    if (cleanCursorPos > 0) {
+                        finalClean = newClean.slice(0, cleanCursorPos - 1) + newClean.slice(cleanCursorPos);
+                    }
+                }
+
+                // 4. Format the final clean string
+                let formatted = "";
+                if (finalClean !== "") {
+                    const parsed = parseInt(finalClean, 10);
+                    formatted = isNaN(parsed) ? "" : formatNumber(parsed);
+                }
+
+                // 5. Update input value and cache it
+                this.value = formatted;
+                lastValue = formatted;
+
+                // 6. Calculate new cursor position based on digitsAfterCursor count
+                let newPosition = formatted.length;
+                let digitsSeen = 0;
+                while (newPosition > 0 && digitsSeen < digitsAfterCursor) {
+                    newPosition--;
+                    if (/\d/.test(formatted[newPosition])) {
+                        digitsSeen++;
+                    }
+                }
+
+                // 7. Restore cursor position
+                this.setSelectionRange(newPosition, newPosition);
+
+                // 8. Update preview
                 updateReceiptPreview();
             });
         }
