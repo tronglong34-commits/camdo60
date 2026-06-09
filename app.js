@@ -1698,8 +1698,8 @@ function exportReceiptToPDF(contractId) {
     document.body.appendChild(pdfContainer);
     
     pdfContainer.innerHTML = `
-    <div id="pdf-render-area" style="width:480px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.5;box-sizing:border-box;overflow:hidden;padding:12px;">
-        <div style="border:2px solid #111;padding:16px;border-radius:12px;box-sizing:border-box;">
+    <div id="pdf-render-area" style="width:480px;height:680px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.5;box-sizing:border-box;overflow:hidden;padding:12px;display:flex;flex-direction:column;">
+        <div style="border:2px solid #111;padding:16px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
         
         <!-- Header cửa hàng -->
         <div style="text-align:center;margin-bottom:4px;">
@@ -1784,7 +1784,7 @@ function exportReceiptToPDF(contractId) {
         </div>
         
         <!-- Chữ ký -->
-        <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+        <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:12px;">
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:top;">
                     <div style="font-size:10px;font-weight:600;color:#444;">ĐẠI DIỆN CỬA HÀNG</div>
