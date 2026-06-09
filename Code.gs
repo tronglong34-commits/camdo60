@@ -146,7 +146,11 @@ function doPost(e) {
           }
           
           var file = targetFolder.createFile(blob);
-          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          try {
+            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          } catch (err) {
+            // Bỏ qua lỗi nếu chính sách tổ chức (Google Workspace) chặn chia sẻ công khai ngoài tổ chức
+          }
           imageUrl = file.getUrl();
         } catch (e) {
           imageUrl = "Lỗi lưu ảnh: " + e.toString();
@@ -319,7 +323,11 @@ function doPost(e) {
           }
           
           var pdfFile = pdfFolder.createFile(blob);
-          pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          try {
+            pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          } catch (err) {
+            // Bỏ qua lỗi nếu chính sách tổ chức (Google Workspace) chặn chia sẻ công khai
+          }
           pdfUrl = pdfFile.getUrl();
           
           // Ghi nhận link PDF vào cột K (cột 11) của hợp đồng trong Danh_Sach_Cam_Do
