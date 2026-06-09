@@ -1639,7 +1639,8 @@ function exportReceiptToPDF(contractId) {
     document.body.appendChild(pdfContainer);
     
     pdfContainer.innerHTML = `
-    <div id="pdf-render-area" style="width:480px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.5;box-sizing:border-box;overflow:hidden;">
+    <div id="pdf-render-area" style="width:480px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.5;box-sizing:border-box;overflow:hidden;padding:12px;">
+        <div style="border:2px solid #111;padding:16px;border-radius:12px;box-sizing:border-box;">
         
         <!-- Header cửa hàng -->
         <div style="text-align:center;margin-bottom:4px;">
@@ -1740,6 +1741,7 @@ function exportReceiptToPDF(contractId) {
                 </td>
             </tr>
         </table>
+        </div>
     </div>
     `;
     
