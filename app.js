@@ -72,6 +72,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
+    // Bind real-time currency formatting with focus/blur pattern to prevent all Gboard duplication / IME issues
+    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input'];
+    currencyInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Strip commas on focus so user can edit raw number smoothly
+            el.addEventListener('focus', function() {
+                this.value = this.value.replace(/,/g, '');
+            });
+
+            // Format with commas on blur so it displays nicely
+            el.addEventListener('blur', function() {
+                const clean = this.value.replace(/\D/g, '');
+                if (clean !== "") {
+                    const parsed = parseInt(clean, 10);
+                    this.value = isNaN(parsed) ? "" : formatNumber(parsed);
+                }
+                updateReceiptPreview();
+            });
+
+            // Strip non-digits on input but do not add commas to avoid cursor/duplication glitches
+            el.addEventListener('input', function() {
+                const clean = this.value.replace(/\D/g, '');
+                if (this.value !== clean) {
+                    const start = this.selectionStart;
+                    this.value = clean;
+                    this.setSelectionRange(start - 1, start - 1);
+                }
+                updateReceiptPreview();
+            });
+        }
+    });
+    
     // 4. Form Submit Handlers
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
@@ -1514,13 +1547,13 @@ function closeLightbox() {
 }
 
 function formatCurrencyInput(input) {
-    let value = input.value.replace(/,/g, '');
-    if (isNaN(value)) {
+    const clean = input.value.replace(/\D/g, '');
+    if (clean === "") {
         input.value = "";
-        return;
+    } else {
+        const parsed = parseInt(clean, 10);
+        input.value = isNaN(parsed) ? "" : formatNumber(parsed);
     }
-    if (value === "") return;
-    input.value = formatNumber(parseFloat(value));
     updateReceiptPreview();
 }
 
