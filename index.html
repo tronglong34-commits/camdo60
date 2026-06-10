@@ -437,6 +437,8 @@
                             <select id="filter-status" onchange="renderActiveContracts()"
                                 class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm">
                                 <option value="Active">Đang cầm</option>
+                                <option value="Liquidating">Chờ thanh lý</option>
+                                <option value="Liquidated">Đã thanh lý</option>
                                 <option value="Closed">Đã tất toán (chuộc)</option>
                                 <option value="All">Tất cả</option>
                             </select>
@@ -520,42 +522,54 @@
                 </div>
 
                 <!-- Stats KPI Cards -->
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <!-- KPI 1 (Clickable to show all active contracts) -->
                     <div onclick="switchTab('active-contracts')" class="glass-card p-5 rounded-2xl border-l-4 border-l-brand-500 cursor-pointer">
                         <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Đang Cầm</span>
                         <h3 id="stat-tab-active-count" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Số lượng hợp đồng hoạt động (Click xem chi tiết)</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng đang hoạt động (Click xem)</p>
                     </div>
                     <!-- KPI 2 -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500">
                         <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Vốn Cầm Gốc</span>
                         <h3 id="stat-tab-total-capital" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tổng số vốn đang cho khách vay hiện tại</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Tổng vốn gốc cho vay hiện tại</p>
                     </div>
                     <!-- KPI 3 -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
                         <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block">Lãi Tuần Này</span>
                         <h3 id="stat-tab-week-interest" class="text-2xl sm:text-3xl font-black text-emerald-400 mt-2 truncate">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thu được từ đầu tuần đến nay</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thu được tuần này</p>
                     </div>
                     <!-- KPI 4 -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-accent-500">
                         <span class="text-xs text-accent-400 font-semibold uppercase tracking-wider block">Lãi Tháng Này</span>
                         <h3 id="stat-tab-month-interest" class="text-2xl sm:text-3xl font-black text-accent-400 mt-2 truncate">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thực nhận trong tháng hiện tại</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thu được tháng này</p>
                     </div>
                     <!-- KPI 5: HĐ Thêm Mới Trong Tháng -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-indigo-500">
                         <span class="text-xs text-indigo-400 font-semibold uppercase tracking-wider block">HĐ Đã Thêm</span>
                         <h3 id="stat-tab-month-added-count" class="text-2xl sm:text-3xl font-black text-indigo-400 mt-2 truncate">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng được lập mới trong tháng này</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng lập mới trong tháng</p>
                     </div>
                     <!-- KPI 6: HĐ Tất Toán Trong Tháng -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-pink-500">
                         <span class="text-xs text-pink-400 font-semibold uppercase tracking-wider block">HĐ Tất Toán</span>
                         <h3 id="stat-tab-month-closed-count" class="text-2xl sm:text-3xl font-black text-pink-400 mt-2 truncate">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng đã thanh lý/chuộc đồ tháng này</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng đã tất toán tháng này</p>
+                    </div>
+                    <!-- KPI 7: Chờ Thanh Lý -->
+                    <div onclick="switchTab('active-contracts'); document.getElementById('filter-status').value = 'Liquidating'; renderActiveContracts();" class="glass-card p-5 rounded-2xl border-l-4 border-l-orange-500 cursor-pointer">
+                        <span class="text-xs text-orange-400 font-semibold uppercase tracking-wider block">Chờ Thanh Lý</span>
+                        <h3 id="stat-tab-liquidating-capital" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0đ</h3>
+                        <p id="stat-tab-liquidating-count" class="text-[10px] text-slate-400 mt-1">0 hợp đồng chờ thanh lý (Click xem)</p>
+                    </div>
+                    <!-- KPI 8: Vốn Đã Thu Hồi -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500">
+                        <span class="text-xs text-rose-400 font-semibold uppercase tracking-wider block">Vốn Đã Thu Hồi</span>
+                        <h3 id="stat-tab-recovered-capital" class="text-2xl sm:text-3xl font-black text-rose-400 mt-2 truncate">0đ</h3>
+                        <p id="stat-tab-liquidated-count" class="text-[10px] text-slate-500 mt-1">Từ 0 hợp đồng đã thanh lý</p>
                     </div>
                 </div>
 
@@ -735,6 +749,9 @@
                     <button id="detail-modal-close-contract-btn" class="px-4 py-2.5 bg-accent-600 hover:bg-accent-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-accent-600/20">
                         <i class="fa-solid fa-box-open"></i> Chuộc Đồ
                     </button>
+                    <button id="detail-modal-liquidate-btn" class="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-orange-600/20 hidden">
+                        <i class="fa-solid fa-scale-balanced"></i> Thanh Lý
+                    </button>
                     <button id="detail-modal-repawn-btn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 hidden">
                         <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
                     </button>
@@ -864,6 +881,69 @@
                     <button type="submit"
                         class="flex-1 py-3 bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-white font-bold rounded-xl transition duration-200 shadow-lg shadow-accent-600/20">
                         Chuộc Đồ & Tất Toán
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ==================== MODAL: THANH LÝ TÀI SẢN ==================== -->
+    <div id="liquidate-contract-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-6 rounded-2xl glass-card shadow-2xl relative border border-slate-800 bg-slate-900">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-orange-500"></i> Thanh Lý Tài Sản HĐ
+                </h3>
+                <button type="button" onclick="closeLiquidateContractModal()" class="text-slate-400 hover:text-white transition duration-200">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="liquidate-contract-form" class="mt-4 space-y-4">
+                <input type="hidden" id="modal-liquidate-hd-id">
+                <input type="hidden" id="modal-liquidate-customer-name">
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Mã Hợp Đồng</label>
+                    <p id="modal-liquidate-hd-display" class="text-sm text-slate-200 font-bold">HD0001</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Khách Hàng</label>
+                    <p id="modal-liquidate-customer-display" class="text-sm text-slate-200 font-bold">Nguyễn Văn A</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Tiền Gốc Cầm</label>
+                    <p id="modal-liquidate-principal-display" class="text-sm text-emerald-400 font-bold">0đ</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Trạng Thái Thanh Lý <span class="text-red-500">*</span></label>
+                    <select id="modal-liquidate-status-select" required onchange="toggleLiquidationAmountField()"
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900 border border-slate-700/50">
+                        <option value="Liquidating">Chờ thanh lý</option>
+                        <option value="Liquidated">Đã thanh lý (Thu hồi vốn)</option>
+                    </select>
+                </div>
+
+                <div id="modal-liquidate-amount-container" class="hidden">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số Tiền Thu Hồi Vốn (VND) <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-liquidate-amount-input"
+                        inputmode="decimal"
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm font-bold text-emerald-400 bg-slate-900 border border-slate-700/50" placeholder="0">
+                    <p class="text-[10px] text-slate-400 mt-1">Nhập số tiền thực tế thu hồi từ việc bán thanh lý tài sản này.</p>
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeLiquidateContractModal()"
+                        class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition duration-200">
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit"
+                        class="flex-1 py-3 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-bold rounded-xl transition duration-200 shadow-lg shadow-orange-600/20">
+                        Xác Nhận
                     </button>
                 </div>
             </form>

@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Bind real-time currency formatting with caret preservation to prevent all cursor-jumping & Gboard duplication / IME issues
-    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input'];
+    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -165,6 +165,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeContractForm = document.getElementById('close-contract-form');
     if (closeContractForm) {
         closeContractForm.addEventListener('submit', handleCloseContract);
+    }
+    
+    const liquidateContractForm = document.getElementById('liquidate-contract-form');
+    if (liquidateContractForm) {
+        liquidateContractForm.addEventListener('submit', handleLiquidateContract);
     }
     
     const settingsForm = document.getElementById('settings-form');
@@ -482,7 +487,7 @@ function getUnpaidDays(contract, stats) {
 
 function getInterestFromTransaction(item) {
     const amount = parseFloat(item.So_Tien_Dong) || 0;
-    if (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ")) {
+    if (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ") || item.Ghi_Chu.includes("Thanh lý")) {
         const contract = state.contracts.find(c => c.Ma_HD === item.Ma_HD);
         if (contract) {
             const principal = parseFloat(contract.So_Tien_Cam) || 0;
@@ -555,8 +560,12 @@ function renderActiveContracts() {
         filteredList = state.contracts.filter(c => c.Trang_Thai === 'Active');
     } else if (filterStatus === 'Closed') {
         filteredList = state.contracts.filter(c => c.Trang_Thai === 'Closed');
+    } else if (filterStatus === 'Liquidating') {
+        filteredList = state.contracts.filter(c => c.Trang_Thai === 'Liquidating');
+    } else if (filterStatus === 'Liquidated') {
+        filteredList = state.contracts.filter(c => c.Trang_Thai === 'Liquidated');
     } else {
-        filteredList = state.contracts.filter(c => c.Trang_Thai === 'Active' || c.Trang_Thai === 'Closed');
+        // 'All' - no filter, shows all
     }
     
     if (filteredList.length === 0) {
@@ -570,11 +579,22 @@ function renderActiveContracts() {
         const card = document.createElement('div');
         
         const isClosed = c.Trang_Thai === 'Closed';
-        const statusBadge = isClosed 
-            ? `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`
-            : `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
+        const isLiquidating = c.Trang_Thai === 'Liquidating';
+        const isLiquidated = c.Trang_Thai === 'Liquidated';
+        const isTerminal = isClosed || isLiquidated;
+        
+        let statusBadge = "";
+        if (isClosed) {
+            statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`;
+        } else if (isLiquidating) {
+            statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ Thanh Lý</span>`;
+        } else if (isLiquidated) {
+            statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Đã Thanh Lý</span>`;
+        } else {
+            statusBadge = `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
+        }
             
-        card.className = `glass-card p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 ${isClosed ? 'opacity-60 hover:opacity-100' : ''}`;
+        card.className = `glass-card p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 ${isTerminal ? 'opacity-60 hover:opacity-100' : ''}`;
         card.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
         card.dataset.assetType = c.Loai_Tai_San;
         card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
@@ -596,24 +616,30 @@ function renderActiveContracts() {
         let paymentStatusBadge = "";
         let daysColorClass = "text-brand-400";
         let daysStatusSuffix = "";
-        if (!isClosed) {
-            const unpaidDays = getUnpaidDays(c, stats);
-            const isHonda = c.Loai_Tai_San === 'Honda';
-            const limitDue = isHonda ? 20 : 5;
-            const limitOverdue = isHonda ? 30 : 7;
-            
-            if (unpaidDays === 0 || unpaidDays <= limitDue) {
-                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Bình thường</span>`;
-                daysColorClass = "text-emerald-400";
-                daysStatusSuffix = `(${stats.days} ngày)`;
-            } else if (unpaidDays <= limitOverdue) {
-                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Đến hạn</span>`;
-                daysColorClass = "text-amber-400";
-                daysStatusSuffix = `(${stats.days} ngày - Đến hạn)`;
+        if (!isTerminal) {
+            if (isLiquidating) {
+                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ thanh lý</span>`;
+                daysColorClass = "text-orange-400";
+                daysStatusSuffix = `(${stats.days} ngày - Chờ thanh lý)`;
             } else {
-                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Trễ hạn ${unpaidDays}n</span>`;
-                daysColorClass = "text-rose-400";
-                daysStatusSuffix = `(${stats.days} ngày - Trễ hạn)`;
+                const unpaidDays = getUnpaidDays(c, stats);
+                const isHonda = c.Loai_Tai_San === 'Honda';
+                const limitDue = isHonda ? 20 : 5;
+                const limitOverdue = isHonda ? 30 : 7;
+                
+                if (unpaidDays === 0 || unpaidDays <= limitDue) {
+                    paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Bình thường</span>`;
+                    daysColorClass = "text-emerald-400";
+                    daysStatusSuffix = `(${stats.days} ngày)`;
+                } else if (unpaidDays <= limitOverdue) {
+                    paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Đến hạn</span>`;
+                    daysColorClass = "text-amber-400";
+                    daysStatusSuffix = `(${stats.days} ngày - Đến hạn)`;
+                } else {
+                    paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Trễ hạn ${unpaidDays}n</span>`;
+                    daysColorClass = "text-rose-400";
+                    daysStatusSuffix = `(${stats.days} ngày - Trễ hạn)`;
+                }
             }
         }
 
@@ -640,7 +666,7 @@ function renderActiveContracts() {
         }
         
         let buttonsHtml = "";
-        if (isClosed) {
+        if (isTerminal) {
             buttonsHtml = `
                 <button onclick="event.stopPropagation(); handleRePawn('${c.Ma_HD}')" 
                     class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/25 flex items-center justify-center gap-1.5">
@@ -660,7 +686,7 @@ function renderActiveContracts() {
             `;
         }
         
-        let contractCodeDisplay = isClosed ? `<span class="text-xs text-slate-500 font-semibold ml-1">${c.Ma_HD}</span>` : "";
+        let contractCodeDisplay = isTerminal ? `<span class="text-xs text-slate-500 font-semibold ml-1">${c.Ma_HD}</span>` : "";
         
         card.innerHTML = `
             <div class="space-y-4">
@@ -691,17 +717,14 @@ function renderActiveContracts() {
                 <!-- Quick Financial Highlights (Gốc & Nợ Lãi) -->
                 <div class="grid grid-cols-2 gap-2 bg-slate-950/50 p-3.5 rounded-2xl border border-white/5">
                     <div>
-                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Tiền Cầm Gốc</p>
-                        <p class="text-base font-extrabold text-emerald-400 mt-0.5">${formatVND(c.So_Tien_Cam)}</p>
-                    </div>
-                    <div class="border-l border-white/5 pl-3">
-                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">${isClosed ? 'Trạng Thái' : 'Lãi Còn Nợ'}</p>
-                        <p class="text-base font-extrabold ${isClosed ? 'text-slate-500' : 'text-amber-500'} mt-0.5">
-                            ${isClosed ? 'Tất Toán' : formatVND(Math.max(0, stats.accrued - stats.collected))}
+                        <p class="text-[9px                    <div class="border-l border-white/5 pl-3">
+                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">${isTerminal ? 'Trạng Thái' : 'Lãi Còn Nợ'}</p>
+                        <p class="text-base font-extrabold ${isTerminal ? 'text-slate-500' : 'text-amber-500'} mt-0.5">
+                            ${isClosed ? 'Tất Toán' : isLiquidated ? 'Đã Thanh Lý' : formatVND(Math.max(0, stats.accrued - stats.collected))}
                         </p>
                     </div>
                 </div>
-
+ 
                 <!-- Asset & Interest Breakdown Grid -->
                 <div class="bg-slate-950/30 rounded-2xl border border-white/5 text-[11px] overflow-hidden">
                     <div class="grid grid-cols-2 divide-x divide-white/5 border-b border-white/5">
@@ -713,11 +736,11 @@ function renderActiveContracts() {
                             <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Ngày cầm</p>
                             <p class="text-white font-semibold mt-0.5 flex items-center flex-wrap gap-1">
                                 <span>${c.Ngay_Cam}</span>
-                                ${isClosed ? '' : `<span class="${daysColorClass} text-[9px] font-bold">${daysStatusSuffix}</span>`}
+                                ${isTerminal ? '' : `<span class="${daysColorClass} text-[9px] font-bold">${daysStatusSuffix}</span>`}
                             </p>
                         </div>
                     </div>
-                    ${isClosed ? '' : `
+                    ${isTerminal ? '' : `
                     <div class="grid grid-cols-2 divide-x divide-white/5">
                         <div class="px-3.5 py-2.5 min-w-0">
                             <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Lãi tích lũy</p>
@@ -730,7 +753,7 @@ function renderActiveContracts() {
                     </div>
                     `}
                 </div>
-
+ 
                 ${c.Ghi_Chu ? `
                 <div class="bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl text-[11px] text-amber-200/90 leading-relaxed mt-2">
                     <span class="font-semibold text-amber-400">Ghi chú:</span> ${c.Ghi_Chu}
@@ -738,7 +761,7 @@ function renderActiveContracts() {
                 ` : ""}
             </div>
             
-            <div class="${isClosed ? 'mt-6 pt-4 border-t border-white/5' : 'grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5'}" onclick="event.stopPropagation();">
+            <div class="${isTerminal ? 'mt-6 pt-4 border-t border-white/5' : 'grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5'}" onclick="event.stopPropagation();">
                 ${buttonsHtml}
             </div>
         `;
@@ -827,6 +850,22 @@ function renderStatistics() {
     const activeCount = active.length;
     const totalCapital = active.reduce((sum, c) => sum + (parseFloat(c.So_Tien_Cam) || 0), 0);
     
+    // Liquidating calculations
+    const liquidating = state.contracts.filter(c => c.Trang_Thai === 'Liquidating');
+    const liquidatingCount = liquidating.length;
+    const liquidatingCapital = liquidating.reduce((sum, c) => sum + (parseFloat(c.So_Tien_Cam) || 0), 0);
+    
+    // Liquidated / Capital recovered calculations
+    const liquidated = state.contracts.filter(c => c.Trang_Thai === 'Liquidated');
+    const liquidatedCount = liquidated.length;
+    
+    let totalRecovered = 0;
+    state.history.forEach(item => {
+        if (item.Ghi_Chu.includes("Thanh lý tài sản thu hồi vốn")) {
+            totalRecovered += parseFloat(item.So_Tien_Dong) || 0;
+        }
+    });
+    
     const startOfWeek = getStartOfWeek();
     const startOfMonth = getStartOfMonth();
     
@@ -868,6 +907,10 @@ function renderStatistics() {
     const tabMonthInterestEl = document.getElementById('stat-tab-month-interest');
     const tabMonthAddedEl = document.getElementById('stat-tab-month-added-count');
     const tabMonthClosedEl = document.getElementById('stat-tab-month-closed-count');
+    const tabLiquidatingCapitalEl = document.getElementById('stat-tab-liquidating-capital');
+    const tabLiquidatingCountEl = document.getElementById('stat-tab-liquidating-count');
+    const tabRecoveredCapitalEl = document.getElementById('stat-tab-recovered-capital');
+    const tabLiquidatedCountEl = document.getElementById('stat-tab-liquidated-count');
     
     if (tabActiveCountEl) tabActiveCountEl.innerText = activeCount;
     if (tabTotalCapitalEl) tabTotalCapitalEl.innerText = formatVND(totalCapital);
@@ -875,6 +918,10 @@ function renderStatistics() {
     if (tabMonthInterestEl) tabMonthInterestEl.innerText = formatVND(monthInterest);
     if (tabMonthAddedEl) tabMonthAddedEl.innerText = monthAddedCount;
     if (tabMonthClosedEl) tabMonthClosedEl.innerText = monthClosedCount;
+    if (tabLiquidatingCapitalEl) tabLiquidatingCapitalEl.innerText = formatVND(liquidatingCapital);
+    if (tabLiquidatingCountEl) tabLiquidatingCountEl.innerText = `${liquidatingCount} hợp đồng chờ thanh lý (Click xem)`;
+    if (tabRecoveredCapitalEl) tabRecoveredCapitalEl.innerText = formatVND(totalRecovered);
+    if (tabLiquidatedCountEl) tabLiquidatedCountEl.innerText = `Từ ${liquidatedCount} hợp đồng đã thanh lý`;
     
     const assetBody = document.getElementById('stat-asset-table-body');
     if (assetBody) {
@@ -1458,6 +1505,12 @@ function openContractDetailsModal(hdId) {
             statusEl.innerText = `Trễ hạn ${unpaidDays} ngày`;
             statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20";
         }
+    } else if (contract.Trang_Thai === 'Liquidating') {
+        statusEl.innerText = 'Chờ thanh lý';
+        statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20";
+    } else if (contract.Trang_Thai === 'Liquidated') {
+        statusEl.innerText = 'Đã thanh lý';
+        statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20";
     } else {
         statusEl.innerText = 'Đã tất toán';
         statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700";
@@ -1515,8 +1568,9 @@ function openContractDetailsModal(hdId) {
     const payBtn = document.getElementById('detail-modal-pay-btn');
     const closeHdBtn = document.getElementById('detail-modal-close-contract-btn');
     const repawnBtn = document.getElementById('detail-modal-repawn-btn');
+    const liquidateBtn = document.getElementById('detail-modal-liquidate-btn');
     
-    if (contract.Trang_Thai === 'Active') {
+    if (contract.Trang_Thai === 'Active' || contract.Trang_Thai === 'Liquidating') {
         payBtn.classList.remove('hidden');
         payBtn.onclick = () => {
             closeContractDetailsModal();
@@ -1530,9 +1584,18 @@ function openContractDetailsModal(hdId) {
         };
         
         if (repawnBtn) repawnBtn.classList.add('hidden');
+        
+        if (liquidateBtn) {
+            liquidateBtn.classList.remove('hidden');
+            liquidateBtn.onclick = () => {
+                closeContractDetailsModal();
+                openLiquidateContractModal(hdId, contract.Ten_Khach_Hang, contract.So_Tien_Cam);
+            };
+        }
     } else {
         payBtn.classList.add('hidden');
         closeHdBtn.classList.add('hidden');
+        if (liquidateBtn) liquidateBtn.classList.add('hidden');
         
         if (repawnBtn) {
             repawnBtn.classList.remove('hidden');
@@ -1984,4 +2047,130 @@ function exportReceiptToPDF(contractId) {
         }
         console.error("Lỗi xuất PDF:", err);
     });
+}
+
+// ==================== LIQUIDATION HELPERS ====================
+function openLiquidateContractModal(hdId, customerName, principal) {
+    const contract = state.contracts.find(c => c.Ma_HD === hdId);
+    const currentStatus = contract ? contract.Trang_Thai : 'Liquidating';
+    
+    document.getElementById('modal-liquidate-hd-id').value = hdId;
+    document.getElementById('modal-liquidate-customer-name').value = customerName;
+    document.getElementById('modal-liquidate-hd-display').innerText = hdId;
+    document.getElementById('modal-liquidate-customer-display').innerText = customerName;
+    
+    const principalVal = parseFloat(principal) || 0;
+    document.getElementById('modal-liquidate-principal-display').innerText = formatVND(principalVal);
+    
+    document.getElementById('modal-liquidate-status-select').value = (currentStatus === 'Liquidating') ? 'Liquidating' : 'Liquidating';
+    document.getElementById('modal-liquidate-amount-input').value = formatNumber(principalVal);
+    
+    toggleLiquidationAmountField();
+    document.getElementById('liquidate-contract-modal').classList.remove('hidden');
+}
+
+function closeLiquidateContractModal() {
+    document.getElementById('liquidate-contract-modal').classList.add('hidden');
+}
+
+function toggleLiquidationAmountField() {
+    const select = document.getElementById('modal-liquidate-status-select');
+    const container = document.getElementById('modal-liquidate-amount-container');
+    const input = document.getElementById('modal-liquidate-amount-input');
+    
+    if (select.value === 'Liquidated') {
+        container.classList.remove('hidden');
+        input.required = true;
+    } else {
+        container.classList.add('hidden');
+        input.required = false;
+    }
+}
+
+async function handleLiquidateContract(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+    }
+    isSubmitting = true;
+    
+    try {
+        const hdId = document.getElementById('modal-liquidate-hd-id').value;
+        const name = document.getElementById('modal-liquidate-customer-name').value;
+        const newStatus = document.getElementById('modal-liquidate-status-select').value;
+        const rawAmount = document.getElementById('modal-liquidate-amount-input').value.replace(/,/g, '');
+        const amountVal = parseFloat(rawAmount) || 0;
+        
+        if (newStatus === 'Liquidated' && amountVal <= 0) {
+            showToast("Số tiền thu hồi phải lớn hơn 0 khi đã thanh lý!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        
+        showLoading(true, "Đang cập nhật trạng thái thanh lý...");
+        
+        const payload = {
+            action: "liquidateContract",
+            Ma_HD: hdId,
+            Trang_Thai: newStatus,
+            So_Tien_Dong: newStatus === 'Liquidated' ? amountVal : 0,
+            Ten_Khach_Hang: name
+        };
+        
+        const res = await postToAPI(payload);
+        
+        if (res.success) {
+            const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
+            if (contractIdx > -1) {
+                state.contracts[contractIdx].Trang_Thai = newStatus;
+            }
+            
+            if (newStatus === 'Liquidated' && amountVal > 0) {
+                let newGdId = "GD0001";
+                if (state.history.length > 0) {
+                    const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
+                    newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
+                }
+                
+                const newPayment = {
+                    Ma_Giao_Dich: newGdId,
+                    Ma_HD: hdId,
+                    Ten_Khach_Hang: name,
+                    Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
+                    So_Tien_Dong: amountVal,
+                    Ghi_Chu: "Thanh lý tài sản thu hồi vốn"
+                };
+                
+                state.history.push(newPayment);
+            }
+            
+            localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+            localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+            
+            closeLiquidateContractModal();
+            showToast(`Đã chuyển trạng thái hợp đồng ${hdId}!`, "success");
+            switchTab('active-contracts');
+        } else {
+            showToast("Lỗi khi thanh lý hợp đồng: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handleLiquidateContract:", error);
+        showToast("Đã xảy ra lỗi hệ thống khi thanh lý!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
+    }
 }
