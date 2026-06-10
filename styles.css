@@ -4,45 +4,111 @@
     height: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: #090d16;
 }
 ::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 4px;
+    background: #1e293b;
+    border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: #334155;
 }
 
-/* Glassmorphism utilities */
+/* Premium Background Ambient Glows */
+body {
+    background-color: #0b0f19;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.07) 0%, transparent 40%);
+    background-attachment: fixed;
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: -10%;
+    left: 30%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+    filter: blur(80px);
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    bottom: -10%;
+    right: 25%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+    filter: blur(100px);
+}
+
+/* Glassmorphism card styles */
 .glass-card {
-    background: rgba(30, 41, 59, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(15, 22, 38, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Hover effects for interactive cards */
+.glass-card[onclick]:hover {
+    transform: translateY(-4px);
+    background: rgba(15, 22, 38, 0.8);
+    border-color: rgba(14, 165, 233, 0.35);
+    box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6), 0 0 20px 2px rgba(14, 165, 233, 0.08);
+}
+
+/* Inputs and Buttons styling */
 .glass-input {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    background: rgba(9, 13, 22, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-input:focus {
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+    border-color: #38bdf8;
+    background: rgba(9, 13, 22, 0.7);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.1);
     outline: none;
+}
+
+/* Premium Floating Mobile Dock */
+.floating-mobile-dock {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    padding: 10px 16px;
+    z-index: 50;
+    transition: all 0.3s ease;
 }
 
 /* Safe area for mobile device home indicator */
 .pb-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
 }
 
 /* Keyframes for animations */
 @keyframes slide-in {
     from {
-        transform: translateY(1rem) scale(0.95);
+        transform: translateY(1.5rem) scale(0.96);
         opacity: 0;
     }
     to {
@@ -52,7 +118,7 @@
 }
 
 .animate-slide-in {
-    animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Print Styling to force A5 layout exactly */
