@@ -458,6 +458,28 @@ function getContractStats(contract) {
     };
 }
 
+function getUnpaidDays(contract, stats) {
+    if (contract.Trang_Thai === 'Closed') return 0;
+    const principal = parseFloat(contract.So_Tien_Cam) || 0;
+    const elapsedDays = stats.days;
+    const collected = stats.collected;
+    
+    if (stats.accrued <= collected) {
+        return 0;
+    }
+    
+    let paidUpToDay = 0;
+    for (let d = 0; d <= elapsedDays; d++) {
+        const interestAtD = calculateInterest(principal, contract.Loai_Tai_San, d);
+        if (interestAtD <= collected) {
+            paidUpToDay = d;
+        } else {
+            break;
+        }
+    }
+    return Math.max(0, elapsedDays - paidUpToDay);
+}
+
 function getInterestFromTransaction(item) {
     const amount = parseFloat(item.So_Tien_Dong) || 0;
     if (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ")) {
@@ -549,29 +571,69 @@ function renderActiveContracts() {
         
         const isClosed = c.Trang_Thai === 'Closed';
         const statusBadge = isClosed 
-            ? `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-700 text-slate-400 border border-slate-600">Đã Tất Toán</span>`
+            ? `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`
             : `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
             
-        card.className = `glass-card p-6 rounded-3xl relative overflow-hidden border ${isClosed ? 'border-slate-800 bg-slate-900/40 opacity-75 hover:opacity-100' : 'border-slate-800 bg-slate-800/40 hover:bg-slate-800/60'} transition duration-300 flex flex-col justify-between cursor-pointer`;
+        card.className = `glass-card p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 ${isClosed ? 'opacity-60 hover:opacity-100' : ''}`;
         card.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
         card.dataset.assetType = c.Loai_Tai_San;
         card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
         
+        // Dynamic badge style based on Loai_Tai_San
+        let assetBadgeClass = "bg-slate-500/15 text-slate-300 border border-slate-500/30";
+        if (c.Loai_Tai_San === 'Honda') {
+            assetBadgeClass = "bg-amber-500/15 text-amber-300 border border-amber-500/30";
+        } else if (c.Loai_Tai_San === 'Điện thoại') {
+            assetBadgeClass = "bg-sky-500/15 text-sky-300 border border-sky-500/30";
+        } else if (c.Loai_Tai_San === 'Laptop') {
+            assetBadgeClass = "bg-purple-500/15 text-purple-300 border border-purple-500/30";
+        } else if (c.Loai_Tai_San === 'iPad' || c.Loai_Tai_San === 'IPad') {
+            assetBadgeClass = "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+        } else {
+            assetBadgeClass = "bg-pink-500/15 text-pink-300 border border-pink-500/30";
+        }
+
+        let paymentStatusBadge = "";
+        let daysColorClass = "text-brand-400";
+        let daysStatusSuffix = "";
+        if (!isClosed) {
+            const unpaidDays = getUnpaidDays(c, stats);
+            const isHonda = c.Loai_Tai_San === 'Honda';
+            const limitDue = isHonda ? 20 : 5;
+            const limitOverdue = isHonda ? 30 : 7;
+            
+            if (unpaidDays === 0 || unpaidDays <= limitDue) {
+                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Bình thường</span>`;
+                daysColorClass = "text-emerald-400";
+                daysStatusSuffix = `(${stats.days} ngày)`;
+            } else if (unpaidDays <= limitOverdue) {
+                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Đến hạn</span>`;
+                daysColorClass = "text-amber-400";
+                daysStatusSuffix = `(${stats.days} ngày - Đến hạn)`;
+            } else {
+                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Trễ hạn ${unpaidDays}n</span>`;
+                daysColorClass = "text-rose-400";
+                daysStatusSuffix = `(${stats.days} ngày - Trễ hạn)`;
+            }
+        }
 
         let imgHtml = "";
         if (c.Hinh_Anh) {
             const displayUrl = formatImageUrl(c.Hinh_Anh);
             if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
                 imgHtml = `
-                    <div class="mt-4 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900/60 h-28 cursor-zoom-in" onclick="event.stopPropagation(); openLightbox('${displayUrl}')">
-                        <img src="${displayUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex flex-col items-center justify-center text-[10px] text-slate-500 bg-slate-900/40 p-2 text-center\'><i class=\'fa-solid fa-image-slash text-base mb-1\'></i>Lỗi tải ảnh Google Drive<br>(Vui lòng kiểm tra quyền chia sẻ)</div>';">
+                    <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-slate-950/40 group cursor-zoom-in transition-all duration-300 hover:border-white/20 shrink-0" onclick="event.stopPropagation(); openLightbox('${displayUrl}')">
+                        <img src="${displayUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="handleImageLoadError(this)">
+                        <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <i class="fa-solid fa-magnifying-glass text-white text-xs"></i>
+                        </div>
                     </div>
                 `;
             } else if (c.Hinh_Anh.startsWith("Lỗi")) {
+                let cleanErr = c.Hinh_Anh.replace("Lỗi lưu ảnh: ", "").replace("Exception: ", "").replace("Truy cập bị từ chối: DriveApp.", "Quyền Drive bị từ chối");
                 imgHtml = `
-                    <div class="mt-4 p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-[10px] flex items-center gap-1.5">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>Lưu ảnh thất bại: ${c.Hinh_Anh.replace("Lỗi lưu ảnh: ", "")}</span>
+                    <div class="w-16 h-16 rounded-xl border border-white/5 bg-slate-950/30 flex flex-col items-center justify-center text-slate-500 transition-all duration-300 hover:border-white/10 shrink-0" title="Chi tiết: ${cleanErr}">
+                        <i class="fa-solid fa-image-slash text-base text-slate-600"></i>
                     </div>
                 `;
             }
@@ -581,18 +643,18 @@ function renderActiveContracts() {
         if (isClosed) {
             buttonsHtml = `
                 <button onclick="event.stopPropagation(); handleRePawn('${c.Ma_HD}')" 
-                    class="w-full py-2.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-600 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-emerald-500/20">
+                    class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/25 flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
                 </button>
             `;
         } else {
             buttonsHtml = `
                 <button onclick="event.stopPropagation(); openPayInterestModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${stats.accrued - stats.collected})" 
-                    class="py-2.5 bg-brand-500/10 text-brand-400 hover:bg-brand-500 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-brand-500/20">
+                    class="py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-brand-500/25 flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
                 </button>
                 <button onclick="event.stopPropagation(); openCloseContractModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${c.So_Tien_Cam}, ${stats.accrued - stats.collected})"
-                    class="py-2.5 bg-accent-500/10 text-accent-400 hover:bg-accent-500 hover:text-white font-bold rounded-xl text-xs transition duration-200 flex items-center justify-center gap-1.5 border border-accent-500/20">
+                    class="py-3 bg-slate-900/60 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 hover:text-white font-bold rounded-xl text-xs transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-box-open"></i> Chuộc Đồ
                 </button>
             `;
@@ -602,65 +664,81 @@ function renderActiveContracts() {
         
         card.innerHTML = `
             <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-1">
-                        ${statusBadge}
-                        ${contractCodeDisplay}
+                <!-- Card Header & Customer Info -->
+                <div class="pb-3 border-b border-white/5 flex gap-3 justify-between items-start">
+                    <div class="space-y-2.5 flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            ${statusBadge}
+                            ${paymentStatusBadge}
+                            ${contractCodeDisplay}
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="text-base font-bold tracking-tight truncate ${isClosed ? 'text-slate-500 line-through' : 'text-white'}">${c.Ten_Khach_Hang}</h4>
+                            <p class="text-xs text-slate-400 flex items-center gap-2">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-slate-950/45 text-[9px] text-slate-400 border border-white/5">
+                                    <i class="fa-solid fa-phone"></i>
+                                </span>
+                                <span class="font-semibold tracking-wide text-slate-300">${c.So_Dien_Thoai}</span>
+                            </p>
+                        </div>
                     </div>
-                    <span class="text-xs px-2.5 py-0.5 rounded-full font-medium ${c.Loai_Tai_San === 'Honda' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-accent-500/10 text-accent-400 border border-accent-500/20'}">${c.Loai_Tai_San}</span>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                        <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold ${assetBadgeClass}">${c.Loai_Tai_San}</span>
+                        ${imgHtml}
+                    </div>
                 </div>
                 
-                <div>
-                    <h4 class="text-lg font-bold ${isClosed ? 'text-slate-400 line-through' : 'text-white'}">${c.Ten_Khach_Hang}</h4>
-                    <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                        <i class="fa-solid fa-phone text-[10px]"></i> ${c.So_Dien_Thoai}
-                    </p>
-                </div>
-                
-                <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Chi tiết:</span>
-                        <span class="text-white font-semibold">${c.Chi_Tiet_Tai_San}</span>
+                <!-- Quick Financial Highlights (Gốc & Nợ Lãi) -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-950/50 p-3.5 rounded-2xl border border-white/5">
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Tiền Cầm Gốc</p>
+                        <p class="text-base font-extrabold text-emerald-400 mt-0.5">${formatVND(c.So_Tien_Cam)}</p>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Ngày cầm cũ:</span>
-                        <span class="text-white font-semibold">${c.Ngay_Cam}</span>
+                    <div class="border-l border-white/5 pl-3">
+                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">${isClosed ? 'Trạng Thái' : 'Lãi Còn Nợ'}</p>
+                        <p class="text-base font-extrabold ${isClosed ? 'text-slate-500' : 'text-amber-500'} mt-0.5">
+                            ${isClosed ? 'Tất Toán' : formatVND(Math.max(0, stats.accrued - stats.collected))}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset & Interest Breakdown Grid -->
+                <div class="bg-slate-950/30 rounded-2xl border border-white/5 text-[11px] overflow-hidden">
+                    <div class="grid grid-cols-2 divide-x divide-white/5 border-b border-white/5">
+                        <div class="px-3.5 py-2.5 min-w-0">
+                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Chi tiết</p>
+                            <p class="text-white font-semibold truncate mt-0.5" title="${c.Chi_Tiet_Tai_San}">${c.Chi_Tiet_Tai_San}</p>
+                        </div>
+                        <div class="px-3.5 py-2.5 min-w-0">
+                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Ngày cầm</p>
+                            <p class="text-white font-semibold mt-0.5 flex items-center flex-wrap gap-1">
+                                <span>${c.Ngay_Cam}</span>
+                                ${isClosed ? '' : `<span class="${daysColorClass} text-[9px] font-bold">${daysStatusSuffix}</span>`}
+                            </p>
+                        </div>
                     </div>
                     ${isClosed ? '' : `
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Số ngày đã cầm:</span>
-                        <span class="text-brand-400 font-bold">${stats.days} ngày</span>
+                    <div class="grid grid-cols-2 divide-x divide-white/5">
+                        <div class="px-3.5 py-2.5 min-w-0">
+                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Lãi tích lũy</p>
+                            <p class="text-slate-200 font-semibold mt-0.5">${formatVND(stats.accrued)}</p>
+                        </div>
+                        <div class="px-3.5 py-2.5 min-w-0">
+                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Đã đóng lãi</p>
+                            <p class="text-purple-400 font-semibold mt-0.5">${formatVND(stats.collected)}</p>
+                        </div>
                     </div>
                     `}
-                    <div class="flex justify-between border-t border-slate-800 pt-2 text-sm">
-                        <span class="text-slate-400 font-medium">Số tiền cầm cũ:</span>
-                        <span class="text-emerald-400 font-extrabold">${formatVND(c.So_Tien_Cam)}</span>
-                    </div>
                 </div>
 
-                ${isClosed ? '' : `
-                <div class="bg-accent-500/5 p-4 rounded-2xl border border-accent-500/10 space-y-1.5 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Lãi tích lũy:</span>
-                        <span class="text-accent-400 font-extrabold">${formatVND(stats.accrued)}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Đã đóng lãi:</span>
-                        <span class="text-purple-400 font-bold">${formatVND(stats.collected)}</span>
-                    </div>
-                    <div class="flex justify-between border-t border-slate-800 pt-1.5 text-slate-200">
-                        <span>Lãi còn nợ:</span>
-                        <span class="font-bold text-amber-500">${formatVND(Math.max(0, stats.accrued - stats.collected))}</span>
-                    </div>
+                ${c.Ghi_Chu ? `
+                <div class="bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl text-[11px] text-amber-200/90 leading-relaxed mt-2">
+                    <span class="font-semibold text-amber-400">Ghi chú:</span> ${c.Ghi_Chu}
                 </div>
-                `}
-
-                ${imgHtml}
-
-                ${c.Ghi_Chu ? `<p class="text-[11px] text-slate-500 italic mt-2"><span class="font-semibold not-italic">Ghi chú:</span> ${c.Ghi_Chu}</p>` : ""}
+                ` : ""}
             </div>
             
-            <div class="${isClosed ? 'mt-6 pt-4 border-t border-slate-800/50' : 'grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-slate-800/50'}">
+            <div class="${isClosed ? 'mt-6 pt-4 border-t border-white/5' : 'grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5'}" onclick="event.stopPropagation();">
                 ${buttonsHtml}
             </div>
         `;
@@ -769,16 +847,34 @@ function renderStatistics() {
             monthInterest += interestAmount;
         }
     });
+
+    const monthAddedCount = state.contracts.filter(c => {
+        if (!c.Ngay_Cam) return false;
+        const addedDate = new Date(c.Ngay_Cam);
+        addedDate.setHours(0, 0, 0, 0);
+        return addedDate >= startOfMonth;
+    }).length;
+
+    const monthClosedCount = state.history.filter(item => {
+        if (!item.Ngay_Dong_Lai) return false;
+        const txDate = new Date(item.Ngay_Dong_Lai);
+        txDate.setHours(0, 0, 0, 0);
+        return txDate >= startOfMonth && (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ"));
+    }).length;
     
     const tabActiveCountEl = document.getElementById('stat-tab-active-count');
     const tabTotalCapitalEl = document.getElementById('stat-tab-total-capital');
     const tabWeekInterestEl = document.getElementById('stat-tab-week-interest');
     const tabMonthInterestEl = document.getElementById('stat-tab-month-interest');
+    const tabMonthAddedEl = document.getElementById('stat-tab-month-added-count');
+    const tabMonthClosedEl = document.getElementById('stat-tab-month-closed-count');
     
     if (tabActiveCountEl) tabActiveCountEl.innerText = activeCount;
     if (tabTotalCapitalEl) tabTotalCapitalEl.innerText = formatVND(totalCapital);
     if (tabWeekInterestEl) tabWeekInterestEl.innerText = formatVND(weekInterest);
     if (tabMonthInterestEl) tabMonthInterestEl.innerText = formatVND(monthInterest);
+    if (tabMonthAddedEl) tabMonthAddedEl.innerText = monthAddedCount;
+    if (tabMonthClosedEl) tabMonthClosedEl.innerText = monthClosedCount;
     
     const assetBody = document.getElementById('stat-asset-table-body');
     if (assetBody) {
@@ -792,9 +888,9 @@ function renderStatistics() {
             const tr = document.createElement('tr');
             tr.className = "hover:bg-slate-800/20 border-b border-slate-800/50 transition duration-150";
             tr.innerHTML = `
-                <td class="py-3 font-semibold text-slate-100">${cat}</td>
-                <td class="py-3 text-center font-bold text-brand-400">${catContracts.length} HĐ</td>
-                <td class="py-3 text-right font-bold text-emerald-400">${formatVND(catCapital)}</td>
+                <td class="py-3 px-4 font-semibold text-slate-100">${cat}</td>
+                <td class="py-3 px-4 text-center font-bold text-brand-400">${catContracts.length} HĐ</td>
+                <td class="py-3 px-4 text-right font-bold text-emerald-400">${formatVND(catCapital)}</td>
             `;
             assetBody.appendChild(tr);
         });
@@ -823,11 +919,11 @@ function renderStatistics() {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/20 border-b border-slate-800/50 transition duration-150";
                 tr.innerHTML = `
-                    <td class="py-3 text-slate-400">${item.Ngay_Dong_Lai}</td>
-                    <td class="py-3 text-brand-400 font-bold cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
-                    <td class="py-3 text-slate-200 font-medium">${item.Ten_Khach_Hang}</td>
-                    <td class="py-3 text-right font-extrabold text-emerald-400">${formatVND(interestAmount)}</td>
-                    <td class="py-3 text-[10px] text-slate-400">
+                    <td class="py-3 px-4 text-slate-400">${item.Ngay_Dong_Lai}</td>
+                    <td class="py-3 px-4 text-brand-400 font-bold cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
+                    <td class="py-3 px-4 text-slate-200 font-medium">${item.Ten_Khach_Hang}</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-emerald-400">${formatVND(interestAmount)}</td>
+                    <td class="py-3 px-4 text-[10px] text-slate-400">
                         <span class="px-2 py-0.5 rounded-full ${item.Ghi_Chu.includes("Chuộc đồ") ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-300'}">${item.Ghi_Chu}</span>
                     </td>
                 `;
@@ -860,15 +956,15 @@ function updateReceiptPreview() {
     document.getElementById('preview-phone').innerText = phone;
     document.getElementById('preview-asset-type').innerText = assetType;
     document.getElementById('preview-asset-detail').innerText = assetDetail;
-    document.getElementById('preview-date').innerText = dateVal;
+    document.getElementById('preview-date').innerText = formatDateToDMY(dateVal);
     
     const previewDetailLabel = document.getElementById('preview-asset-detail-label');
     if (previewDetailLabel) {
         previewDetailLabel.innerText = assetType === 'Honda' ? "Biển số xe:" : "Chi tiết thiết bị:";
     }
     
-    document.getElementById('preview-amount').innerText = formatVND(amountVal);
-    document.getElementById('preview-amount-words').innerText = numberToWords(amountVal);
+    document.getElementById('preview-amount').innerText = formatNumber(amountVal);
+    document.getElementById('preview-amount-words').innerText = numberToWords(amountVal).toUpperCase();
     document.getElementById('preview-signature-name').innerText = name !== "Chưa nhập" ? name : ".................";
     
     const noteEl = document.getElementById('preview-interest-note');
@@ -1346,10 +1442,24 @@ function openContractDetailsModal(hdId) {
     document.getElementById('detail-modal-date').innerText = contract.Ngay_Cam;
     
     const statusEl = document.getElementById('detail-modal-status');
-    statusEl.innerText = contract.Trang_Thai === 'Active' ? 'Đang cầm' : 'Đã tất toán';
     if (contract.Trang_Thai === 'Active') {
-        statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        const unpaidDays = getUnpaidDays(contract, stats);
+        const isHonda = contract.Loai_Tai_San === 'Honda';
+        const limitDue = isHonda ? 20 : 5;
+        const limitOverdue = isHonda ? 30 : 7;
+        
+        if (unpaidDays === 0 || unpaidDays <= limitDue) {
+            statusEl.innerText = 'Bình thường';
+            statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        } else if (unpaidDays <= limitOverdue) {
+            statusEl.innerText = 'Đến hạn đóng lãi';
+            statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
+        } else {
+            statusEl.innerText = `Trễ hạn ${unpaidDays} ngày`;
+            statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20";
+        }
     } else {
+        statusEl.innerText = 'Đã tất toán';
         statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700";
     }
     
@@ -1366,9 +1476,14 @@ function openContractDetailsModal(hdId) {
     if (contract.Hinh_Anh) {
         const displayUrl = formatImageUrl(contract.Hinh_Anh);
         if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
-            imgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-4\'><i class=\'fa-solid fa-image-slash text-2xl mb-2\'></i><span>Không thể tải ảnh từ Google Drive (Hãy kiểm tra lại quyền chia sẻ thư mục)</span></div>';">`;
+            imgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-4 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-2xl mb-2 text-slate-600\'></i><span class=\'text-xs font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
         } else {
-            imgContainer.innerHTML = `<span class="text-red-400 text-xs">${contract.Hinh_Anh}</span>`;
+            imgContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center text-slate-500 p-4 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_Anh}">
+                    <i class="fa-solid fa-image-slash text-2xl mb-2 text-slate-600"></i>
+                    <span class="text-xs font-semibold text-slate-500">Ảnh không khả dụng</span>
+                </div>
+            `;
         }
     } else {
         imgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh đính kèm</span>`;
@@ -1454,7 +1569,7 @@ async function printContractReceipt(contractId) {
         document.getElementById('preview-phone').innerText = contract.So_Dien_Thoai;
         document.getElementById('preview-asset-type').innerText = contract.Loai_Tai_San;
         document.getElementById('preview-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
-        document.getElementById('preview-date').innerText = contract.Ngay_Cam;
+        document.getElementById('preview-date').innerText = formatDateToDMY(contract.Ngay_Cam);
         
         const previewDetailLabel = document.getElementById('preview-asset-detail-label');
         if (previewDetailLabel) {
@@ -1462,8 +1577,8 @@ async function printContractReceipt(contractId) {
         }
         
         const amountVal = parseFloat(contract.So_Tien_Cam) || 0;
-        document.getElementById('preview-amount').innerText = formatVND(amountVal);
-        document.getElementById('preview-amount-words').innerText = numberToWords(amountVal);
+        document.getElementById('preview-amount').innerText = formatNumber(amountVal);
+        document.getElementById('preview-amount-words').innerText = numberToWords(amountVal).toUpperCase();
         document.getElementById('preview-signature-name').innerText = contract.Ten_Khach_Hang;
         
         const noteEl = document.getElementById('preview-interest-note');
@@ -1600,6 +1715,20 @@ function formatImageUrl(url) {
     return url;
 }
 
+function handleImageLoadError(img) {
+    const parent = img.parentElement;
+    if (parent) {
+        parent.innerHTML = `
+            <div class="w-full h-full flex flex-col items-center justify-center text-[10px] text-slate-500 bg-slate-950/25 p-2 text-center gap-1">
+                <i class="fa-solid fa-image-slash text-lg text-slate-600"></i>
+                <span class="font-semibold tracking-wide">Ảnh không khả dụng</span>
+            </div>
+        `;
+        parent.classList.remove('cursor-zoom-in', 'hover:border-white/10');
+        parent.removeAttribute('onclick');
+    }
+}
+
 // Close Lightbox Image Modal
 function closeLightbox() {
     document.getElementById('lightbox-modal').classList.add('hidden');
@@ -1622,6 +1751,15 @@ function formatNumber(num) {
 
 function formatVND(amount) {
     return formatNumber(Math.round(amount)) + "đ";
+}
+
+function formatDateToDMY(dateString) {
+    if (!dateString) return "";
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateString;
 }
 
 function numberToWords(number) {
@@ -1698,105 +1836,94 @@ function exportReceiptToPDF(contractId) {
     document.body.appendChild(pdfContainer);
     
     pdfContainer.innerHTML = `
-    <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#111;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.5;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
-        <div style="border:2px solid #111;padding:18px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
+    <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#000;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
+        <div style="border:2px solid #000;padding:18px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
         
-        <!-- Header cửa hàng -->
-        <div style="text-align:center;margin-bottom:6px;">
-            <div style="font-size:20px;font-weight:800;letter-spacing:2px;color:#111;margin-bottom:1px;">CẦM ĐỒ 60</div>
-            <div style="font-size:10px;color:#555;">ĐC: Số 60 - đường phước thiện - p Long bình</div>
-            <div style="font-size:10px;color:#555;">Hotline/Zalo: 0962772783 LONG</div>
-        </div>
-        
-        <!-- Đường kẻ -->
-        <div style="border-bottom:1.5px solid #333;margin:6px 0;"></div>
-        
-        <!-- Tiêu đề hợp đồng -->
-        <div style="text-align:center;margin-bottom:10px;">
-            <div style="font-size:18px;font-weight:700;letter-spacing:3px;color:#111;margin-bottom:1px;">HỢP ĐỒNG CẦM ĐỒ</div>
-            <div style="font-size:11px;color:#777;">Mã HĐ: <span style="font-weight:700;color:#222;">${previewId}</span></div>
-        </div>
-        
-        <!-- Thông tin khách hàng -->
-        <table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:12.5px;">
+        <!-- Two-Column Header -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;border-bottom:1.5px dashed #000;padding-bottom:8px;">
             <tr>
-                <td style="padding:3px 0;color:#555;width:40%;">Khách hàng:</td>
-                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewName}</td>
+                <td style="width:50%;vertical-align:top;font-family:sans-serif;text-align:left;padding-right:10px;">
+                    <div style="font-size:14px;font-weight:900;letter-spacing:1px;color:#000;margin-bottom:2px;text-transform:uppercase;">DỊCH VỤ CẦM ĐỒ 60</div>
+                    <div style="font-size:9.5px;color:#222;line-height:1.3;margin-bottom:1px;">ĐC: số 60_ Phước Thiện_ P. long Bình_ TP.HCM</div>
+                    <div style="font-size:9.5px;color:#222;line-height:1.3;margin-bottom:1px;">THU MUA XE MÁY CŨ_ ĐIỆN THOẠI CŨ GIÁ CAO</div>
+                    <div style="font-size:9.5px;color:#000;font-weight:700;line-height:1.3;margin-top:2px;">Cầm xe máy và ô tô lãi suất thấp nhất khu vực.</div>
+                </td>
+                <td style="width:50%;vertical-align:top;font-family:sans-serif;text-align:center;border-left:1px solid #ccc;padding-left:10px;">
+                    <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:1px;line-height:1.3;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                    <div style="font-size:8px;font-weight:700;color:#222;margin-bottom:4px;border-bottom:1px solid #777;display:inline-block;padding-bottom:2px;">Độc lập - Tự do - Hạnh phúc</div>
+                    <div style="font-size:14px;font-weight:900;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
+                    <div style="font-size:10px;color:#222;margin-top:1px;">Số: <span style="font-weight:700;color:#000;">${previewId}</span></div>
+                    <div style="font-size:10px;color:#222;margin-top:1px;">Hotline: 0962772783(ZALO) (Mr. Long)</div>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- Aligned Form Details Grid -->
+        <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:11px;font-family:sans-serif;color:#000;">
+            <tr>
+                <td style="width:110px;font-weight:700;color:#333;padding:4px 0;">KHÁCH HÀNG</td>
+                <td style="width:15px;font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;text-transform:uppercase;padding:4px 0;">${previewName}</td>
             </tr>
             <tr>
-                <td style="padding:3px 0;color:#555;">Số điện thoại:</td>
-                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewPhone}</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">ĐIỆN THOẠI</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;padding:4px 0;">${previewPhone}</td>
             </tr>
             <tr>
-                <td style="padding:3px 0;color:#555;">Loại tài sản:</td>
-                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewAssetType}</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">TÀI SẢN CẦM</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;text-transform:uppercase;padding:4px 0;">${previewAssetType} - ${previewAssetDetail}</td>
             </tr>
             <tr>
-                <td style="padding:3px 0;color:#555;">${previewAssetDetailLabel}</td>
-                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewAssetDetail}</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">SỐ TIỀN CẦM</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;font-size:12px;padding:4px 0;">${previewAmount}</td>
             </tr>
             <tr>
-                <td style="padding:3px 0;color:#555;">Ngày cầm cố:</td>
-                <td style="padding:3px 0;text-align:right;font-weight:700;color:#111;">${previewDate}</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">BẰNG CHỮ</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;text-transform:uppercase;padding:4px 0;">${previewAmountWords}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:700;color:#333;padding:4px 0;">NGÀY CẦM</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;padding:4px 0;">${previewDate}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:700;color:#333;padding:4px 0;">LÃI THỎA THUẬN</td>
+                <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
+                <td style="font-weight:900;color:#000;padding:4px 0;">${previewInterestNote}</td>
             </tr>
         </table>
         
         <!-- Đường kẻ nét đứt -->
-        <div style="border-bottom:1px dashed #bbb;margin:6px 0;"></div>
+        <div style="border-bottom:1px dashed #bbb;margin:8px 0;"></div>
         
-        <!-- Số tiền cầm -->
-        <div style="margin-bottom:4px;">
-            <table style="width:100%;border-collapse:collapse;">
-                <tr>
-                    <td style="font-size:14px;font-weight:700;color:#111;padding:4px 0;">SỐ TIỀN CẦM</td>
-                    <td style="font-size:18px;font-weight:800;color:#0a7c42;text-align:right;padding:4px 0;">${previewAmount}</td>
-                </tr>
-            </table>
-            <div style="text-align:right;font-size:10px;color:#555;font-style:italic;margin-top:1px;">
-                (Bằng chữ: <span style="font-weight:600;color:#333;">${previewAmountWords}</span>)
-            </div>
-            <table style="width:100%;border-collapse:collapse;margin-top:4px;">
-                <tr>
-                    <td style="font-size:11.5px;color:#555;padding:2px 0;">Lãi suất thỏa thuận:</td>
-                    <td style="font-size:11.5px;font-weight:600;color:#333;text-align:right;padding:2px 0;">${previewInterestNote}</td>
-                </tr>
-            </table>
+        <!-- Điều khoản lưu ý của khách hàng -->
+        <div style="font-family:sans-serif;font-size:9.5px;color:#222;line-height:1.4;margin-bottom:8px;">
+            <div style="font-weight:800;color:#000;margin-bottom:3px;text-transform:uppercase;">KHÁCH HÀNG LƯU Ý:</div>
+            <div style="margin-bottom:2px;">Tài sản thế chấp trên thuộc quyền sở hữu của tôi. Tôi cam đoan Nếu sai tôi hoàn toàn chịu trách nhiệm trước pháp luật.</div>
+            <div style="margin-bottom:2px;">Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.</div>
+            <div>Nếu đánh mất Giấy mà Giấy đó đã có người đến chuộc đồ, đồ không còn chúng tôi không chịu trách nhiệm.</div>
         </div>
         
-        <!-- Đường kẻ nét đứt -->
-        <div style="border-bottom:1px dashed #bbb;margin:6px 0;"></div>
-        
-        <!-- Điều khoản -->
-        <div style="margin-bottom:8px;">
-            <div style="font-size:11.5px;font-weight:700;color:#333;margin-bottom:4px;">ĐIỀU KHOẢN THỎA THUẬN:</div>
-            <div style="font-size:9.5px;color:#555;padding-left:4px;line-height:1.5;">
-                1. Khách hàng cam kết tài sản cầm cố là tài sản hợp pháp.<br>
-                2. Lãi suất được tính theo biểu phí công khai của cửa hàng.<br>
-                3. Kỳ hạn đóng lãi định kỳ đúng ngày. Quá hạn 15 ngày không đóng lãi hoặc gia hạn hợp đồng, cửa hàng có toàn quyền thanh lý tài sản để thu hồi nợ.<br>
-                4. Cửa hàng cam kết niêm phong, bảo quản tài sản an toàn tuyệt đối.
-            </div>
-        </div>
-        
-        <!-- QR Code -->
-        <div style="text-align:center;margin:6px 0;">
-            <div style="font-size:9px;color:#777;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
-            <img src="${qrBase64}" style="width:90px;height:90px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
+        <!-- Zalo QR Code -->
+        <div style="text-align:center;margin:6px 0;padding-top:6px;border-top:1px dashed #bbb;font-family:sans-serif;">
+            <div style="font-size:8.5px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
+            <img src="${qrBase64}" style="width:75px;height:75px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
         </div>
         
         <!-- Chữ ký -->
-        <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:12px;">
+        <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-family:sans-serif;font-size:10px;font-weight:700;color:#000;">
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:top;">
-                    <div style="font-size:11.5px;font-weight:600;color:#444;">ĐẠI DIỆN CỬA HÀNG</div>
-                    <div style="font-size:9px;color:#999;margin-top:1px;">(Ký và ghi rõ họ tên)</div>
-                    <div style="height:45px;"></div>
-                    <div style="font-size:12.5px;font-weight:700;color:#111;">CẦM ĐỒ 60</div>
+                    <div style="text-transform:uppercase;margin-bottom:40px;">CHỦ TIỆM</div>
+                    <div style="font-weight:600;color:#555;">CẦM ĐỒ 60</div>
                 </td>
                 <td style="width:50%;text-align:center;vertical-align:top;">
-                    <div style="font-size:11.5px;font-weight:600;color:#444;">KHÁCH HÀNG CẦM ĐỒ</div>
-                    <div style="font-size:9px;color:#999;margin-top:1px;">(Ký và ghi rõ họ tên)</div>
-                    <div style="height:45px;"></div>
-                    <div style="font-size:12.5px;font-weight:700;color:#111;">${previewSignatureName}</div>
+                    <div style="text-transform:uppercase;margin-bottom:40px;">KHÁCH HÀNG</div>
+                    <div style="font-weight:800;color:#000;text-transform:uppercase;">${previewSignatureName}</div>
                 </td>
             </tr>
         </table>
