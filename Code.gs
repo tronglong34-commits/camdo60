@@ -281,6 +281,60 @@ function doPost(e) {
         message: "Hợp đồng " + maHd + " đã được tất toán (Closed)."
       });
       
+    } else if (action === "liquidateContract") {
+      var sheetCamDo = ss.getSheetByName("Danh_Sach_Cam_Do");
+      if (!sheetCamDo) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy Tab Danh_Sach_Cam_Do" });
+      }
+      
+      var dataCamDo = sheetCamDo.getDataRange().getValues();
+      var maHd = params.Ma_HD;
+      var newStatus = params.Trang_Thai; // 'Liquidating' or 'Liquidated'
+      var foundRow = -1;
+      
+      for (var i = 1; i < dataCamDo.length; i++) {
+        if (dataCamDo[i][0].toString().trim() === maHd.toString().trim()) {
+          foundRow = i + 1; // 1-indexed and header row offset
+          break;
+        }
+      }
+      
+      if (foundRow === -1) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy hợp đồng " + maHd });
+      }
+      
+      // Cập nhật trạng thái thành newStatus (Cột H là cột thứ 8)
+      sheetCamDo.getRange(foundRow, 8).setValue(newStatus);
+      
+      // Nếu là Liquidated và có số tiền thu hồi, ghi nhận vào lịch sử
+      if (newStatus === "Liquidated" && params.So_Tien_Dong && parseFloat(params.So_Tien_Dong) > 0) {
+        var sheetLichSu = ss.getSheetByName("Lich_Su_Dong_Lai");
+        if (sheetLichSu) {
+          var lastRowLichSu = sheetLichSu.getLastRow();
+          var newGdId = "GD0001";
+          if (lastRowLichSu > 1) {
+            var lastIdVal = sheetLichSu.getRange(lastRowLichSu, 1).getValue().toString();
+            var num = parseInt(lastIdVal.replace("GD", ""), 10);
+            if (!isNaN(num)) {
+              newGdId = "GD" + String(num + 1).padStart(4, "0");
+            }
+          }
+          sheetLichSu.appendRow([
+            newGdId,
+            maHd,
+            params.Ten_Khach_Hang || dataCamDo[foundRow-1][1],
+            Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
+            parseFloat(params.So_Tien_Dong),
+            "Thanh lý tài sản thu hồi vốn"
+          ]);
+        }
+      }
+      
+      return createJsonResponse({
+        success: true,
+        message: "Hợp đồng " + maHd + " đã chuyển trạng thái thành " + newStatus
+      });
+      
     } else if (action === "uploadPDF") {
       var pdfUrl = "";
       if (params.pdf_data && params.pdf_name) {
