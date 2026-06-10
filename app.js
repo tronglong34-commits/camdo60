@@ -53,6 +53,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1. Check Login
     checkLoginState();
     
+    // Load saved theme
+    const savedTheme = localStorage.getItem('pawnshop_theme');
+    const root = document.documentElement;
+    const icon = document.getElementById('theme-toggle-icon');
+    const text = document.getElementById('theme-toggle-text');
+    
+    if (savedTheme === 'light') {
+        root.classList.add('theme-light');
+        if (icon) icon.className = "fa-solid fa-moon";
+        if (text) text.innerText = "Giao diện tối";
+    } else {
+        root.classList.remove('theme-light');
+        if (icon) icon.className = "fa-solid fa-sun";
+        if (text) text.innerText = "Giao diện sáng";
+    }
+    
     // 2. Setup input elements & forms
     if (document.getElementById('contract-date')) {
         document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
@@ -832,12 +848,12 @@ function renderPaymentHistory() {
         row.dataset.date = item.Ngay_Dong_Lai || "";
         row.dataset.searchText = `${item.Ma_Giao_Dich} ${item.Ma_HD} ${item.Ten_Khach_Hang} ${item.Ghi_Chu}`.toLowerCase();
         row.innerHTML = `
-            <td class="py-4 px-6 font-semibold text-slate-400 text-xs">${item.Ma_Giao_Dich}</td>
-            <td class="py-4 px-6 text-brand-400 font-bold text-xs cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
-            <td class="py-4 px-6 text-white font-medium">${item.Ten_Khach_Hang}</td>
-            <td class="py-4 px-6 text-slate-400">${item.Ngay_Dong_Lai}</td>
-            <td class="py-4 px-6 text-right font-extrabold text-emerald-400">${formatVND(item.So_Tien_Dong)}</td>
-            <td class="py-4 px-6 text-xs text-slate-300">
+            <td data-label="Mã Giao Dịch" class="py-4 px-6 font-semibold text-slate-400 text-xs">${item.Ma_Giao_Dich}</td>
+            <td data-label="Mã HĐ" class="py-4 px-6 text-brand-400 font-bold text-xs cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
+            <td data-label="Khách Hàng" class="py-4 px-6 text-white font-medium">${item.Ten_Khach_Hang}</td>
+            <td data-label="Ngày Giao Dịch" class="py-4 px-6 text-slate-400">${item.Ngay_Dong_Lai}</td>
+            <td data-label="Số Tiền Thu" class="py-4 px-6 text-right font-extrabold text-emerald-400">${formatVND(item.So_Tien_Dong)}</td>
+            <td data-label="Loại/Ghi Chú" class="py-4 px-6 text-xs text-slate-300">
                 <span class="px-2.5 py-1 rounded-full ${item.Ghi_Chu.includes("Chuộc đồ") ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}">${item.Ghi_Chu}</span>
             </td>
         `;
@@ -957,7 +973,13 @@ function renderStatistics() {
         if (currentMonthTxs.length === 0) {
             recentPaymentsBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="py-4 text-center text-slate-500 italic">Chưa có lượt đóng lãi nào trong tháng này.</td>
+                    <td colspan="5" class="py-10 text-center text-slate-400">
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                            <i class="fa-solid fa-receipt text-3xl text-slate-600/50 mb-1"></i>
+                            <p class="text-xs font-semibold text-slate-400">Chưa có lượt đóng lãi nào trong tháng này</p>
+                            <p class="text-[10px] text-slate-500">Các giao dịch đóng lãi phát sinh sẽ được hiển thị tại đây.</p>
+                        </div>
+                    </td>
                 </tr>
             `;
         } else {
@@ -2172,5 +2194,52 @@ async function handleLiquidateContract(e) {
         isSubmitting = false;
         showLoading(false);
         syncData();
+    }
+}
+
+function toggleReceiptMobile() {
+    const el = document.getElementById('receipt-preview-container');
+    const icon = document.getElementById('toggle-receipt-icon');
+    const text = document.getElementById('toggle-receipt-text');
+    if (!el || !icon || !text) return;
+    
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        icon.className = "fa-solid fa-eye-slash text-[10px]";
+        text.innerText = "Ẩn xem trước";
+    } else {
+        el.classList.add('hidden');
+        icon.className = "fa-solid fa-eye text-[10px]";
+        text.innerText = "Hiện xem trước";
+    }
+}
+
+function clearHistoryFiltersAndRefresh() {
+    const searchInput = document.getElementById('search-history');
+    const dateInput = document.getElementById('history-date-filter');
+    if (searchInput) searchInput.value = "";
+    if (dateInput) dateInput.value = "";
+    filterHistory();
+}
+
+function toggleTheme() {
+    const root = document.documentElement;
+    const icon = document.getElementById('theme-toggle-icon');
+    const text = document.getElementById('theme-toggle-text');
+    
+    if (root.classList.contains('theme-light')) {
+        // Switch to dark mode
+        root.classList.remove('theme-light');
+        localStorage.setItem('pawnshop_theme', 'dark');
+        if (icon) icon.className = "fa-solid fa-sun";
+        if (text) text.innerText = "Giao diện sáng";
+        showToast("Đã chuyển sang Giao diện tối!", "success");
+    } else {
+        // Switch to light mode
+        root.classList.add('theme-light');
+        localStorage.setItem('pawnshop_theme', 'light');
+        if (icon) icon.className = "fa-solid fa-moon";
+        if (text) text.innerText = "Giao diện tối";
+        showToast("Đã chuyển sang Giao diện sáng!", "success");
     }
 }

@@ -8,7 +8,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,9 +22,9 @@
                             100: '#e0f2fe',
                             200: '#bae6fd',
                             300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
+                            400: 'var(--color-brand-400)',
+                            500: 'var(--color-brand-500)',
+                            600: 'var(--color-brand-600)',
                             700: '#0369a1',
                             800: '#075985',
                             900: '#0c4a6e',
@@ -35,9 +35,9 @@
                             100: '#ede9fe',
                             200: '#ddd6fe',
                             300: '#c4b5fd',
-                            400: '#a78bfa',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
+                            400: 'var(--color-accent-400)',
+                            500: 'var(--color-accent-500)',
+                            600: 'var(--color-accent-600)',
                             700: '#6d28d9',
                             800: '#5b21b6',
                             900: '#4c1d95',
@@ -45,7 +45,7 @@
                         }
                     },
                     fontFamily: {
-                        sans: ['Outfit', 'Plus Jakarta Sans', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'Outfit', 'sans-serif'],
                     }
                 }
             }
@@ -59,7 +59,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <!-- External stylesheet -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body class="h-full flex flex-col font-sans select-none overflow-x-hidden">
 
@@ -164,6 +164,12 @@
                 </nav>
 
                 <div class="flex items-center gap-3">
+                    <!-- Theme Toggle Button -->
+                    <button id="theme-toggle-btn" onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center gap-2" title="Chuyển chế độ Sáng/Tối">
+                        <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
+                        <span id="theme-toggle-text" class="hidden md:inline">Giao diện sáng</span>
+                    </button>
+                    
                     <button onclick="logout()" class="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-2">
                         <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden md:inline">Đăng Xuất</span>
                     </button>
@@ -315,11 +321,16 @@
                     <div class="lg:col-span-5 space-y-4">
                         <div class="flex items-center justify-between px-2">
                             <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Xem Trước Hóa Đơn (A5)</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium border border-slate-700">Khổ A5</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="toggleReceiptMobile()" class="lg:hidden text-xs text-brand-400 hover:text-brand-300 font-semibold px-2.5 py-1 bg-brand-500/10 rounded-lg border border-brand-500/20 flex items-center gap-1">
+                                    <i id="toggle-receipt-icon" class="fa-solid fa-eye-slash text-[10px]"></i> <span id="toggle-receipt-text">Ẩn xem trước</span>
+                                </button>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium border border-slate-700">Khổ A5</span>
+                            </div>
                         </div>
                         
                         <!-- A5 Receipt Container -->
-                        <div class="w-full bg-white text-slate-950 p-3 shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
+                        <div id="receipt-preview-container" class="w-full bg-[#f8fafc] text-slate-950 p-3 shadow-2xl rounded-2xl overflow-hidden border border-slate-200 lg:block">
                             <!-- Border Frame -->
                             <div class="border-2 border-slate-900 p-4 rounded-xl">
                                 <!-- Printable Area inside -->
@@ -458,6 +469,9 @@
                     </div>
                     <h3 class="text-lg font-semibold text-slate-200">Không tìm thấy hợp đồng nào</h3>
                     <p class="text-sm text-slate-400 mt-1">Vui lòng lập hợp đồng mới hoặc thay đổi bộ lọc tìm kiếm.</p>
+                    <button onclick="switchTab('new-contract')" class="mt-5 px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white text-xs font-bold rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-1.5 mx-auto">
+                        <i class="fa-solid fa-plus-circle"></i> Lập Hợp Đồng Mới
+                    </button>
                 </div>
             </div>
 
@@ -509,6 +523,14 @@
                     </div>
                     <h3 class="text-lg font-semibold text-slate-200">Lịch sử giao dịch trống</h3>
                     <p class="text-sm text-slate-400 mt-1">Chưa có lượt đóng lãi hoặc chuộc đồ nào được thực hiện.</p>
+                    <div class="flex justify-center gap-3 mt-5">
+                        <button onclick="clearHistoryFiltersAndRefresh()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition duration-200">
+                            Xóa bộ lọc
+                        </button>
+                        <button onclick="switchTab('active-contracts')" class="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white text-xs font-bold rounded-xl transition duration-200 shadow-md">
+                            Xem hợp đồng đang cầm
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -527,49 +549,49 @@
                     <div onclick="switchTab('active-contracts')" class="glass-card p-5 rounded-2xl border-l-4 border-l-brand-500 cursor-pointer">
                         <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Đang Cầm</span>
                         <h3 id="stat-tab-active-count" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng đang hoạt động (Click xem)</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Hợp đồng đang hoạt động (Click xem)</p>
                     </div>
                     <!-- KPI 2 -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500">
                         <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Vốn Cầm Gốc</span>
                         <h3 id="stat-tab-total-capital" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tổng vốn gốc cho vay hiện tại</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Tổng vốn gốc cho vay hiện tại</p>
                     </div>
                     <!-- KPI 3 -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
                         <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block">Lãi Tuần Này</span>
                         <h3 id="stat-tab-week-interest" class="text-2xl sm:text-3xl font-black text-emerald-400 mt-2 truncate">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thu được tuần này</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Tiền lãi thu được tuần này</p>
                     </div>
                     <!-- KPI 4 -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-accent-500">
                         <span class="text-xs text-accent-400 font-semibold uppercase tracking-wider block">Lãi Tháng Này</span>
                         <h3 id="stat-tab-month-interest" class="text-2xl sm:text-3xl font-black text-accent-400 mt-2 truncate">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thu được tháng này</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Tiền lãi thu được tháng này</p>
                     </div>
                     <!-- KPI 5: HĐ Thêm Mới Trong Tháng -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-indigo-500">
                         <span class="text-xs text-indigo-400 font-semibold uppercase tracking-wider block">HĐ Đã Thêm</span>
                         <h3 id="stat-tab-month-added-count" class="text-2xl sm:text-3xl font-black text-indigo-400 mt-2 truncate">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng lập mới trong tháng</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Hợp đồng lập mới trong tháng</p>
                     </div>
                     <!-- KPI 6: HĐ Tất Toán Trong Tháng -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-pink-500">
                         <span class="text-xs text-pink-400 font-semibold uppercase tracking-wider block">HĐ Tất Toán</span>
                         <h3 id="stat-tab-month-closed-count" class="text-2xl sm:text-3xl font-black text-pink-400 mt-2 truncate">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng đã tất toán tháng này</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Hợp đồng đã tất toán tháng này</p>
                     </div>
                     <!-- KPI 7: Chờ Thanh Lý -->
                     <div onclick="switchTab('active-contracts'); document.getElementById('filter-status').value = 'Liquidating'; renderActiveContracts();" class="glass-card p-5 rounded-2xl border-l-4 border-l-orange-500 cursor-pointer">
                         <span class="text-xs text-orange-400 font-semibold uppercase tracking-wider block">Chờ Thanh Lý</span>
                         <h3 id="stat-tab-liquidating-capital" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0đ</h3>
-                        <p id="stat-tab-liquidating-count" class="text-[10px] text-slate-400 mt-1">0 hợp đồng chờ thanh lý (Click xem)</p>
+                        <p id="stat-tab-liquidating-count" class="text-[11px] text-slate-400 mt-2">0 hợp đồng chờ thanh lý (Click xem)</p>
                     </div>
                     <!-- KPI 8: Vốn Đã Thu Hồi -->
                     <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500">
                         <span class="text-xs text-rose-400 font-semibold uppercase tracking-wider block">Vốn Đã Thu Hồi</span>
                         <h3 id="stat-tab-recovered-capital" class="text-2xl sm:text-3xl font-black text-rose-400 mt-2 truncate">0đ</h3>
-                        <p id="stat-tab-liquidated-count" class="text-[10px] text-slate-500 mt-1">Từ 0 hợp đồng đã thanh lý</p>
+                        <p id="stat-tab-liquidated-count" class="text-[11px] text-slate-400 mt-2">Từ 0 hợp đồng đã thanh lý</p>
                     </div>
                 </div>
 
@@ -739,25 +761,32 @@
                 </div>
 
                 <!-- Actions footer -->
-                <div class="flex flex-wrap gap-3 pt-4 border-t border-slate-800 justify-end">
-                    <button id="detail-modal-print-btn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5">
-                        <i class="fa-solid fa-print"></i> In Hóa Đơn (PDF)
-                    </button>
-                    <button id="detail-modal-pay-btn" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-brand-600/20">
-                        <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
-                    </button>
-                    <button id="detail-modal-close-contract-btn" class="px-4 py-2.5 bg-accent-600 hover:bg-accent-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-accent-600/20">
-                        <i class="fa-solid fa-box-open"></i> Chuộc Đồ
-                    </button>
-                    <button id="detail-modal-liquidate-btn" class="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-orange-600/20 hidden">
-                        <i class="fa-solid fa-scale-balanced"></i> Thanh Lý
-                    </button>
-                    <button id="detail-modal-repawn-btn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 hidden">
-                        <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
-                    </button>
-                    <button onclick="closeContractDetailsModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
-                        Đóng
-                    </button>
+                <div class="flex flex-wrap gap-3 pt-4 border-t border-slate-800 items-center justify-between w-full">
+                    <!-- Administrative actions (Left side) -->
+                    <div class="flex flex-wrap gap-2">
+                        <button id="detail-modal-liquidate-btn" class="px-4 py-2.5 bg-orange-600/10 hover:bg-orange-600 text-orange-400 hover:text-white border border-orange-500/20 hover:border-orange-500 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-md hidden">
+                            <i class="fa-solid fa-scale-balanced"></i> Thanh Lý
+                        </button>
+                        <button id="detail-modal-repawn-btn" class="px-4 py-2.5 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-500 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-md hidden">
+                            <i class="fa-solid fa-rotate-right"></i> Cầm Lại
+                        </button>
+                    </div>
+                    
+                    <!-- Daily operations (Right side) -->
+                    <div class="flex flex-wrap gap-3 justify-end">
+                        <button id="detail-modal-print-btn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-print"></i> In Hóa Đơn (PDF)
+                        </button>
+                        <button id="detail-modal-pay-btn" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-brand-600/20">
+                            <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
+                        </button>
+                        <button id="detail-modal-close-contract-btn" class="px-4 py-2.5 bg-accent-600 hover:bg-accent-500 text-white font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-lg shadow-accent-600/20">
+                            <i class="fa-solid fa-box-open"></i> Chuộc Đồ
+                        </button>
+                        <button onclick="closeContractDetailsModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
+                            Đóng
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -997,6 +1026,6 @@
 
 
     <!-- ==================== JAVASCRIPT LOGIC ==================== -->
-    <script src="app.js" defer></script>
+    <script src="app.js?v=2" defer></script>
 </body>
 </html>

@@ -1,3 +1,25 @@
+:root {
+    /* Brand Dark (Neon) */
+    --color-brand-400: #38bdf8;
+    --color-brand-500: #0ea5e9;
+    --color-brand-600: #0284c7;
+    
+    --color-accent-400: #a78bfa;
+    --color-accent-500: #8b5cf6;
+    --color-accent-600: #7c3aed;
+}
+
+.theme-light {
+    /* Brand Light (Deep/Solid) */
+    --color-brand-400: #3b82f6;
+    --color-brand-500: #1e40af;
+    --color-brand-600: #1e3a8a;
+    
+    --color-accent-400: #a21caf;
+    --color-accent-500: #701a75;
+    --color-accent-600: #4a044e;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
@@ -121,6 +143,67 @@ body::after {
     animation: slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Responsive Table to Cards on mobile */
+@media (max-width: 768px) {
+    #tab-payment-history-content table, 
+    #tab-payment-history-content thead, 
+    #tab-payment-history-content tbody, 
+    #tab-payment-history-content th, 
+    #tab-payment-history-content td, 
+    #tab-payment-history-content tr { 
+        display: block; 
+    }
+    
+    #tab-payment-history-content thead {
+        display: none;
+    }
+    
+    #tab-payment-history-content tr {
+        background: rgba(15, 22, 38, 0.65);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        margin-bottom: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    #tab-payment-history-content td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0 !important;
+        border: none !important;
+        text-align: right;
+    }
+    
+    #tab-payment-history-content td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        float: left;
+        text-align: left;
+        margin-right: 12px;
+    }
+    
+    #tab-payment-history-content td:first-child {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding-bottom: 12px !important;
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+    
+    #tab-payment-history-content td:last-child {
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding-top: 12px !important;
+        margin-top: 6px;
+    }
+}
+
 /* Print Styling to force A5 layout exactly */
 @media print {
     body * {
@@ -135,5 +218,249 @@ body::after {
         top: 0;
         width: 148mm;
         height: 210mm;
+        background-color: white !important;
+        color: black !important;
     }
+}
+
+/* ==================== LIGHT MODE THEME OVERRIDES ==================== */
+.theme-light {
+    background-color: #f4f6f9 !important;
+    background-image: none !important;
+    color: #334155 !important;
+}
+
+.theme-light body {
+    background-color: #f4f6f9 !important;
+    background-image: none !important;
+    color: #334155 !important;
+}
+
+.theme-light body::before,
+.theme-light body::after {
+    display: none !important;
+}
+
+/* Scrollbar override */
+.theme-light::-webkit-scrollbar-track,
+.theme-light ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+.theme-light::-webkit-scrollbar-thumb,
+.theme-light ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+.theme-light::-webkit-scrollbar-thumb:hover,
+.theme-light ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Glass Card to White Flat Card */
+.theme-light .glass-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Hover effects for interactive cards in Light mode */
+.theme-light .glass-card[onclick]:hover {
+    transform: translateY(-4px);
+    background: #ffffff !important;
+    border-color: #1e40af !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Inputs and Buttons styling */
+.theme-light .glass-input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+.theme-light .glass-input:focus {
+    border-color: #1e40af !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15) !important;
+}
+
+/* Placeholder color */
+.theme-light .glass-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Texts overrides for high contrast */
+.theme-light .text-white,
+.theme-light .text-slate-100,
+.theme-light h1,
+.theme-light h2,
+.theme-light h3 {
+    color: #0f172a !important;
+}
+
+.theme-light .text-slate-200,
+.theme-light .text-slate-300 {
+    color: #334155 !important;
+}
+
+.theme-light .text-slate-400 {
+    color: #475569 !important;
+}
+
+.theme-light .text-slate-500 {
+    color: #64748b !important;
+}
+
+/* Layout overrides */
+.theme-light header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.theme-light main {
+    background-color: transparent !important;
+}
+
+/* Secondary boxes & sections */
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-900\/60,
+.theme-light .bg-slate-900\/90,
+.theme-light .bg-slate-950,
+.theme-light .bg-slate-950\/40,
+.theme-light .bg-slate-950\/80,
+.theme-light .bg-slate-800,
+.theme-light .bg-slate-800\/80,
+.theme-light .bg-slate-800\/40 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+.theme-light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+.theme-light .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #e2e8f0 !important;
+}
+
+.theme-light .border-slate-800,
+.theme-light .border-slate-700,
+.theme-light .border-slate-700\/50,
+.theme-light .border-slate-800\/80 {
+    border-color: #e2e8f0 !important;
+}
+
+/* Modals styling overrides for Light mode */
+.theme-light #contract-details-modal > div,
+.theme-light #pay-interest-modal > div,
+.theme-light #close-contract-modal > div,
+.theme-light #liquidate-contract-modal > div,
+.theme-light #settings-modal > div {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Text selections & dropdowns in forms */
+.theme-light select.glass-input {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+/* Custom list items & borders */
+.theme-light tr,
+.theme-light th,
+.theme-light td {
+    border-color: #e2e8f0 !important;
+}
+.theme-light tr.bg-slate-800\/80,
+.theme-light tr.bg-slate-800\/60 {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+}
+
+/* Status colors override for Light mode */
+.theme-light .text-emerald-400 {
+    color: #16a34a !important; /* Green 600 */
+}
+.theme-light .bg-emerald-500\/10 {
+    background-color: rgba(22, 163, 74, 0.1) !important;
+}
+.theme-light .border-emerald-500\/20 {
+    border-color: rgba(22, 163, 74, 0.2) !important;
+}
+
+.theme-light .text-orange-400 {
+    color: #ea580c !important; /* Orange 600 */
+}
+.theme-light .bg-orange-500\/10 {
+    background-color: rgba(234, 88, 12, 0.1) !important;
+}
+.theme-light .border-orange-500\/20 {
+    border-color: rgba(234, 88, 12, 0.2) !important;
+}
+
+.theme-light .text-rose-400 {
+    color: #dc2626 !important; /* Red 600 */
+}
+.theme-light .bg-rose-500\/10 {
+    background-color: rgba(220, 38, 38, 0.1) !important;
+}
+.theme-light .border-rose-500\/20 {
+    border-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+/* Closed status */
+.theme-light .text-slate-400 {
+    color: #475569 !important;
+}
+
+/* Details modal labels */
+.theme-light #contract-details-modal span.text-slate-400 {
+    color: #64748b !important;
+}
+
+/* Mobile floating dock theme-light */
+.theme-light .floating-mobile-dock {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+.theme-light .mobile-tab-btn {
+    color: #64748b !important;
+}
+.theme-light .mobile-tab-btn:hover,
+.theme-light .mobile-tab-btn.text-white {
+    color: #1e40af !important;
+}
+
+/* Inactive nav tabs styling */
+.theme-light .tab-btn {
+    color: #475569 !important;
+}
+.theme-light .tab-btn:hover {
+    color: #1e40af !important;
+    background-color: #f1f5f9 !important;
+}
+.theme-light .tab-btn.bg-slate-800\/50 {
+    background-color: #e2e8f0 !important;
+    color: #1e40af !important;
+}
+
+/* Loading overlay override */
+.theme-light #loading-overlay {
+    background-color: rgba(244, 246, 249, 0.8) !important;
+}
+.theme-light #loading-overlay .border-slate-800 {
+    border-color: #cbd5e1 !important;
+}
+.theme-light #loading-overlay p {
+    color: #334155 !important;
+}
+
+/* Toast container override */
+.theme-light #toast-container > div {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
