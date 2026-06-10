@@ -129,91 +129,90 @@
     <div id="app-screen" class="hidden flex-1 flex flex-col min-h-screen">
         
         <!-- HEADER (DESKTOP) -->
-        <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-brand-500/10 text-brand-500 rounded-xl border border-brand-500/20">
-                    <i class="fa-solid fa-gem text-xl"></i>
+        <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 md:px-8 py-4">
+            <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-brand-500/10 text-brand-500 rounded-xl border border-brand-500/20">
+                        <i class="fa-solid fa-gem text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            TIỆM CẦM ĐỒ 60
+                            <span id="mode-badge" class="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20">Demo Mode</span>
+                        </h1>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        TIỆM CẦM ĐỒ 60
-                        <span id="mode-badge" class="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20">Demo Mode</span>
-                    </h1>
-                </div>
-            </div>
-            
-            <!-- Navigation Links (Desktop) -->
-            <nav class="hidden md:flex items-center gap-1">
-                <button onclick="switchTab('new-contract')" id="nav-new-contract" 
-                    class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                    <i class="fa-solid fa-plus-circle"></i> Lập Hợp Đồng
-                </button>
-                <button onclick="switchTab('active-contracts')" id="nav-active-contracts"
-                    class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                    <i class="fa-solid fa-receipt"></i> Hợp Đồng Đang Cầm
-                </button>
-                <button onclick="switchTab('payment-history')" id="nav-payment-history"
-                    class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                    <i class="fa-solid fa-history"></i> Lịch Sử Đóng Lãi
-                </button>
-                <button onclick="switchTab('statistics')" id="nav-statistics"
-                    class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                    <i class="fa-solid fa-chart-line"></i> Bảng Thống Kê
-                </button>
-            </nav>
+                
+                <!-- Navigation Links (Desktop) -->
+                <nav class="hidden md:flex items-center gap-3">
+                    <button onclick="switchTab('new-contract')" id="nav-new-contract" 
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        <i class="fa-solid fa-plus-circle"></i> Lập Hợp Đồng
+                    </button>
+                    <button onclick="switchTab('active-contracts')" id="nav-active-contracts"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        <i class="fa-solid fa-receipt"></i> Hợp Đồng Đang Cầm
+                    </button>
+                    <button onclick="switchTab('payment-history')" id="nav-payment-history"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        <i class="fa-solid fa-history"></i> Lịch Sử Đóng Lãi
+                    </button>
+                    <button onclick="switchTab('statistics')" id="nav-statistics"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        <i class="fa-solid fa-chart-line"></i> Bảng Thống Kê
+                    </button>
+                </nav>
 
-            <div class="flex items-center gap-3">
-                <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition duration-200 flex items-center gap-2">
-                    <i class="fa-solid fa-cog"></i> <span class="hidden md:inline">Cài Đặt</span>
-                </button>
-                <button onclick="logout()" class="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-2">
-                    <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden md:inline">Đăng Xuất</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="logout()" class="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden md:inline">Đăng Xuất</span>
+                    </button>
+                </div>
             </div>
         </header>
 
         <!-- DASHBOARD HERO BANNER (KPI STATS) -->
-        <section class="px-4 md:px-8 py-6 bg-gradient-to-b from-slate-900 to-slate-950">
+        <section class="px-4 md:px-8 py-6 bg-transparent">
             <div class="max-w-7xl mx-auto">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- KPI 1 (Clickable to display all active contracts) -->
-                    <div onclick="switchTab('active-contracts')" class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-brand-500 bg-slate-800/40 border border-slate-800 cursor-pointer hover:bg-slate-800/60 transition duration-200">
+                    <div onclick="switchTab('active-contracts')" class="glass-card p-5 rounded-3xl flex items-center justify-between border-l-4 border-l-brand-500 cursor-pointer">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Đang Cầm</p>
-                            <h3 id="stat-active-count" class="text-2xl font-bold mt-1 text-white">0</h3>
+                            <h3 id="stat-active-count" class="text-2xl font-extrabold mt-1 text-white">0</h3>
                         </div>
-                        <div class="p-3 bg-brand-500/10 text-brand-500 rounded-xl">
-                            <i class="fa-solid fa-receipt text-xl"></i>
+                        <div class="p-3 bg-brand-500/10 text-brand-500 rounded-2xl border border-brand-500/20 shadow-[0_0_15px_rgba(14,165,233,0.15)]">
+                            <i class="fa-solid fa-receipt text-lg"></i>
                         </div>
                     </div>
                     <!-- KPI 2 -->
-                    <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-blue-500 bg-slate-800/40 border border-slate-800">
+                    <div class="glass-card p-5 rounded-3xl flex items-center justify-between border-l-4 border-l-blue-500">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tổng Gốc Cầm</p>
-                            <h3 id="stat-total-principal" class="text-2xl font-bold mt-1 text-white">0đ</h3>
+                            <h3 id="stat-total-principal" class="text-2xl font-extrabold mt-1 text-white">0đ</h3>
                         </div>
-                        <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
-                            <i class="fa-solid fa-money-bill-wave text-xl"></i>
+                        <div class="p-3 bg-blue-500/10 text-blue-500 rounded-2xl border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                            <i class="fa-solid fa-money-bill-wave text-lg"></i>
                         </div>
                     </div>
                     <!-- KPI 3 -->
-                    <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-accent-500 bg-slate-800/40 border border-slate-800">
+                    <div class="glass-card p-5 rounded-3xl flex items-center justify-between border-l-4 border-l-accent-500">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lãi Tích Lũy</p>
-                            <h3 id="stat-accrued-interest" class="text-2xl font-bold mt-1 text-accent-500">0đ</h3>
+                            <h3 id="stat-accrued-interest" class="text-2xl font-extrabold mt-1 text-accent-400">0đ</h3>
                         </div>
-                        <div class="p-3 bg-accent-500/10 text-accent-500 rounded-xl">
-                            <i class="fa-solid fa-percent text-xl"></i>
+                        <div class="p-3 bg-accent-500/10 text-accent-400 rounded-2xl border border-accent-500/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]">
+                            <i class="fa-solid fa-percent text-lg"></i>
                         </div>
                     </div>
                     <!-- KPI 4 -->
-                    <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-purple-500 bg-slate-800/40 border border-slate-800">
+                    <div class="glass-card p-5 rounded-3xl flex items-center justify-between border-l-4 border-l-purple-500">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Đã Thu Lãi</p>
-                            <h3 id="stat-total-collected" class="text-2xl font-bold mt-1 text-white">0đ</h3>
+                            <h3 id="stat-total-collected" class="text-2xl font-extrabold mt-1 text-white">0đ</h3>
                         </div>
-                        <div class="p-3 bg-purple-500/10 text-purple-500 rounded-xl">
-                            <i class="fa-solid fa-hand-holding-dollar text-xl"></i>
+                        <div class="p-3 bg-purple-500/10 text-purple-400 rounded-2xl border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+                            <i class="fa-solid fa-hand-holding-dollar text-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -320,83 +319,85 @@
                         </div>
                         
                         <!-- A5 Receipt Container -->
-                        <div class="w-full bg-white text-slate-900 p-3 shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
+                        <div class="w-full bg-white text-slate-950 p-3 shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
                             <!-- Border Frame -->
                             <div class="border-2 border-slate-900 p-4 rounded-xl">
                                 <!-- Printable Area inside -->
-                                <div id="a5-receipt-preview" class="space-y-4 text-[11px] leading-relaxed select-text font-serif">
-                                    <!-- Shop Info -->
-                                    <div class="text-center space-y-1">
-                                        <h3 class="text-base font-extrabold tracking-wide font-sans text-slate-950">CẦM ĐỒ 60</h3>
-                                        <p class="text-[9px] text-slate-600 font-sans">ĐC: Số 60 - đường phước thiện - p Long bình</p>
-                                        <p class="text-[9px] text-slate-600 font-sans">Hotline/Zalo: 0962772783 LONG</p>
-                                        <div class="border-b border-dashed border-slate-400 pt-2"></div>
+                                <div id="a5-receipt-preview" class="space-y-4 text-[10px] leading-relaxed select-text font-serif">
+                                    
+                                    <!-- Two-Column Header -->
+                                    <div class="grid grid-cols-12 gap-2 pb-2 border-b border-dashed border-slate-400">
+                                        <!-- Left Column (Shop Info) -->
+                                        <div class="col-span-6 text-left space-y-0.5 font-sans">
+                                            <h3 class="text-[11px] font-black tracking-wide uppercase text-slate-950">DỊCH VỤ CẦM ĐỒ 60</h3>
+                                            <p class="text-[8px] text-slate-700 leading-tight">ĐC: số 60_ Phước Thiện_ P. long Bình_ TP.HCM</p>
+                                            <p class="text-[8px] text-slate-700 leading-tight">THU MUA XE MÁY CŨ_ ĐIỆN THOẠI CŨ GIÁ CAO</p>
+                                            <p class="text-[8px] text-slate-950 font-bold leading-tight pt-0.5">Cầm xe máy và ô tô lãi suất thấp nhất khu vực.</p>
+                                        </div>
+                                        
+                                        <!-- Right Column (National Title) -->
+                                        <div class="col-span-6 text-center space-y-0.5 font-sans border-l border-slate-200 pl-2">
+                                            <h4 class="text-[8px] font-black text-slate-950 leading-tight">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h4>
+                                            <p class="text-[7px] text-slate-700 font-semibold leading-tight border-b border-slate-300 pb-0.5 inline-block">Độc lập - Tự do - Hạnh phúc</p>
+                                            <h4 class="text-[12px] font-black text-slate-950 tracking-wider mt-1.5 uppercase">HỢP ĐỒNG CẦM ĐỒ</h4>
+                                            <p class="text-[8px] text-slate-700">Số: <span id="preview-id" class="font-bold text-slate-950">HDxxxx</span></p>
+                                            <p class="text-[8px] text-slate-700">Hotline: 0962772783(ZALO) (Mr. Long)</p>
+                                        </div>
                                     </div>
 
-                                    <!-- Receipt Title -->
-                                    <div class="text-center space-y-1">
-                                        <h4 class="text-sm font-bold tracking-widest text-slate-950 font-sans uppercase">HỢP ĐỒNG CẦM ĐỒ</h4>
-                                        <p class="text-[9px] text-slate-500 font-sans">Mã HĐ: <span id="preview-id" class="font-bold text-slate-800">HDxxxx</span></p>
-                                    </div>
-
-                                    <!-- Customer Details -->
-                                    <div class="space-y-1 pt-1 font-sans">
-                                        <div class="flex justify-between"><span class="text-slate-600">Khách hàng:</span> <span id="preview-name" class="font-bold text-slate-950">Chưa nhập</span></div>
-                                        <div class="flex justify-between"><span class="text-slate-600">Số điện thoại:</span> <span id="preview-phone" class="font-bold text-slate-950">Chưa nhập</span></div>
-                                        <div class="flex justify-between"><span class="text-slate-600">Loại tài sản:</span> <span id="preview-asset-type" class="font-bold text-slate-950">Honda</span></div>
-                                        <div class="flex justify-between"><span id="preview-asset-detail-label" class="text-slate-600">Biển số xe:</span> <span id="preview-asset-detail" class="font-bold text-slate-950">Chưa nhập</span></div>
-                                        <div class="flex justify-between"><span class="text-slate-600">Ngày cầm cố:</span> <span id="preview-date" class="font-bold text-slate-950">2026-06-07</span></div>
+                                    <!-- Customer and Financial Details (Aligned Form Grid) -->
+                                    <div class="space-y-1.5 font-sans text-[9.5px] text-slate-950 py-1">
+                                        <div class="flex"><span class="w-24 shrink-0 font-bold text-slate-700">KHÁCH HÀNG</span><span class="w-4 shrink-0 font-bold text-slate-700">:</span><span id="preview-name" class="font-black text-slate-950 uppercase">Chưa nhập</span></div>
+                                        <div class="flex"><span class="w-24 shrink-0 font-bold text-slate-700">ĐIỆN THOẠI</span><span class="w-4 shrink-0 font-bold text-slate-700">:</span><span id="preview-phone" class="font-black text-slate-950">Chưa nhập</span></div>
+                                        <div class="flex">
+                                            <span class="w-24 shrink-0 font-bold text-slate-700">TÀI SẢN CẦM</span>
+                                            <span class="w-4 shrink-0 font-bold text-slate-700">:</span>
+                                            <span class="font-black text-slate-950 uppercase">
+                                                <span id="preview-asset-type">Honda</span> - <span id="preview-asset-detail">Chưa nhập</span>
+                                                <span id="preview-asset-detail-label" class="hidden">Biển số xe:</span>
+                                            </span>
+                                        </div>
+                                        <div class="flex">
+                                            <span class="w-24 shrink-0 font-bold text-slate-700">SỐ TIỀN CẦM</span>
+                                            <span class="w-4 shrink-0 font-bold text-slate-700">:</span>
+                                            <span id="preview-amount" class="font-black text-slate-950 text-[11px]">0</span>
+                                        </div>
+                                        <div class="flex"><span class="w-24 shrink-0 font-bold text-slate-700">BẰNG CHỮ</span><span class="w-4 shrink-0 font-bold text-slate-700">:</span><span id="preview-amount-words" class="font-black text-slate-950 uppercase">Không đồng</span></div>
+                                        <div class="flex"><span class="w-24 shrink-0 font-bold text-slate-700">NGÀY CẦM</span><span class="w-4 shrink-0 font-bold text-slate-700">:</span><span id="preview-date" class="font-black text-slate-950">Chưa nhập</span></div>
+                                        <div class="flex">
+                                            <span class="w-24 shrink-0 font-bold text-slate-700">LÃI THỎA THUẬN</span>
+                                            <span class="w-4 shrink-0 font-bold text-slate-700">:</span>
+                                            <span id="preview-interest-note" class="font-black text-slate-950">Chu kỳ 30 ngày</span>
+                                        </div>
                                     </div>
 
                                     <div class="border-b border-dashed border-slate-300"></div>
 
-                                    <!-- Financial Info -->
-                                    <div class="space-y-1.5 py-1 font-sans">
-                                        <div class="flex justify-between text-xs font-bold text-slate-950">
-                                            <span>SỐ TIỀN CẦM:</span>
-                                            <span id="preview-amount" class="text-emerald-700 text-sm">0đ</span>
-                                        </div>
-                                        <div class="text-right text-[9px] text-slate-600 italic">
-                                            (Bằng chữ: <span id="preview-amount-words" class="font-semibold text-slate-800">Không đồng</span>)
-                                        </div>
-                                        <div class="flex justify-between text-[10px] text-slate-600">
-                                            <span>Lãi suất thỏa thuận:</span>
-                                            <span id="preview-interest-note" class="font-medium text-slate-800">Chu kỳ 30 ngày</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="border-b border-dashed border-slate-300"></div>
-
-                                    <!-- Terms -->
-                                    <div class="space-y-1 text-[9px] text-slate-500 font-sans">
-                                        <p class="font-semibold text-slate-700">ĐIỀU KHOẢN THỎA THUẬN:</p>
-                                        <ol class="list-decimal pl-3 space-y-0.5">
-                                            <li>Khách hàng cam kết tài sản cầm cố là tài sản hợp pháp.</li>
-                                            <li>Lãi suất được tính theo biểu phí công khai của cửa hàng.</li>
-                                            <li>Kỳ hạn đóng lãi định kỳ đúng ngày. Quá hạn 15 ngày không đóng lãi hoặc gia hạn hợp đồng, cửa hàng có toàn quyền thanh lý tài sản để thu hồi nợ.</li>
-                                            <li>Cửa hàng cam kết niêm phong, bảo quản tài sản an toàn tuyệt đối.</li>
-                                        </ol>
+                                    <!-- Terms (Vietnam Law Compliance) -->
+                                    <div class="space-y-1 text-[8.5px] text-slate-700 font-sans leading-tight">
+                                        <p class="font-bold text-slate-900 uppercase">KHÁCH HÀNG LƯU Ý:</p>
+                                        <p>Tài sản thế chấp trên thuộc quyền sở hữu của tôi. Tôi cam đoan Nếu sai tôi hoàn toàn chịu trách nhiệm trước pháp luật.</p>
+                                        <p>Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.</p>
+                                        <p>Nếu đánh mất Giấy mà Giấy đó đã có người đến chuộc đồ, đồ không còn chúng tôi không chịu trách nhiệm.</p>
                                     </div>
 
                                     <!-- Zalo QR Code Contact Card -->
-                                    <div class="flex flex-col items-center justify-center space-y-1 py-1 font-sans">
+                                    <div class="flex flex-col items-center justify-center space-y-1 pt-1 border-t border-dashed border-slate-300">
                                         <p class="text-[8px] text-slate-500 font-semibold tracking-wider uppercase text-center">Quét mã Zalo liên hệ đóng lãi / tất toán:</p>
-                                        <img src="qr.jpg" class="w-24 h-24 object-contain rounded-lg border border-slate-200 shadow-sm">
+                                        <img src="qr.jpg" class="w-20 h-20 object-contain rounded-lg border border-slate-200 shadow-sm">
                                     </div>
 
                                     <!-- Signatures -->
-                                    <div class="grid grid-cols-2 pt-6 text-center font-sans text-[10px]">
-                                        <div>
-                                            <p class="font-semibold text-slate-700">ĐẠI DIỆN CỬA HÀNG</p>
-                                            <p class="text-[8px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</p>
-                                            <div class="h-12"></div>
-                                            <p class="font-bold text-slate-900">CẦM ĐỒ 60</p>
+                                    <div class="grid grid-cols-2 pt-6 text-center font-sans text-[9px] font-bold">
+                                        <div class="space-y-10">
+                                            <p class="text-slate-900 uppercase">CHỦ TIỆM</p>
+                                            <div class="h-10"></div>
+                                            <p class="text-slate-700 font-semibold">CẦM ĐỒ 60</p>
                                         </div>
-                                        <div>
-                                            <p class="font-semibold text-slate-700">KHÁCH HÀNG CẦM ĐỒ</p>
-                                            <p class="text-[8px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</p>
-                                            <div class="h-12"></div>
-                                            <p id="preview-signature-name" class="font-bold text-slate-900">.................</p>
+                                        <div class="space-y-10">
+                                            <p class="text-slate-900 uppercase">KHÁCH HÀNG</p>
+                                            <div class="h-10"></div>
+                                            <p id="preview-signature-name" class="text-slate-950 uppercase font-black">.................</p>
                                         </div>
                                     </div>
                                 </div>
@@ -409,20 +410,20 @@
             <!-- ==================== TAB 2: HỢP ĐỒNG ĐANG CẦM ==================== -->
             <div id="tab-active-contracts-content" class="tab-content hidden space-y-6">
                 <!-- Bộ lọc & Tìm kiếm -->
-                <div class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-800/40 border border-slate-800">
+                <div class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="relative flex-1">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                             <i class="fa-solid fa-magnifying-glass text-sm"></i>
                         </span>
                         <input type="text" id="search-active" oninput="filterActiveContracts()"
-                            class="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="Tìm theo tên, SĐT, mã hợp đồng, tài sản...">
+                            class="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-white text-sm" placeholder="Tìm theo tên, SĐT, mã hợp đồng, tài sản...">
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-4">
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-filter"></i> Lọc tài sản:</span>
                             <select id="filter-asset" onchange="filterActiveContracts()"
-                                class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
+                                class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm">
                                 <option value="All">Tất cả tài sản</option>
                                 <option value="Honda">Honda (Xe máy)</option>
                                 <option value="Điện thoại">Điện thoại</option>
@@ -434,7 +435,7 @@
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-circle-info"></i> Trạng thái:</span>
                             <select id="filter-status" onchange="renderActiveContracts()"
-                                class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
+                                class="px-3 py-2.5 rounded-xl glass-input text-slate-200 text-sm">
                                 <option value="Active">Đang cầm</option>
                                 <option value="Closed">Đã tất toán (chuộc)</option>
                                 <option value="All">Tất cả</option>
@@ -444,7 +445,7 @@
                 </div>
 
                 <!-- Grid Danh sách hợp đồng đang hoạt động -->
-                <div id="active-contracts-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div id="active-contracts-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-8">
                     <!-- Cards will be rendered dynamically here -->
                 </div>
 
@@ -519,30 +520,42 @@
                 </div>
 
                 <!-- Stats KPI Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
                     <!-- KPI 1 (Clickable to show all active contracts) -->
-                    <div onclick="switchTab('active-contracts')" class="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-800/40 border-l-4 border-l-brand-500 cursor-pointer hover:bg-slate-800/60 transition duration-200">
-                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Hợp Đồng Đang Cầm</span>
-                        <h3 id="stat-tab-active-count" class="text-3xl font-black text-white mt-2">0</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Số lượng hợp đồng đang có trạng thái hoạt động (Click để xem hết)</p>
+                    <div onclick="switchTab('active-contracts')" class="glass-card p-5 rounded-2xl border-l-4 border-l-brand-500 cursor-pointer">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Đang Cầm</span>
+                        <h3 id="stat-tab-active-count" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Số lượng hợp đồng hoạt động (Click xem chi tiết)</p>
                     </div>
                     <!-- KPI 2 -->
-                    <div class="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-800/40 border-l-4 border-l-blue-500">
-                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Tổng Số Vốn Cầm</span>
-                        <h3 id="stat-tab-total-capital" class="text-3xl font-black text-white mt-2">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tổng số vốn đang cho khách vay (tiền gốc)</p>
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Vốn Cầm Gốc</span>
+                        <h3 id="stat-tab-total-capital" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0đ</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Tổng số vốn đang cho khách vay hiện tại</p>
                     </div>
                     <!-- KPI 3 -->
-                    <div class="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-800/40 border-l-4 border-l-emerald-500">
-                        <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block">Lãi Thu Được Tuần Này</span>
-                        <h3 id="stat-tab-week-interest" class="text-3xl font-black text-emerald-400 mt-2">0đ</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thực nhận trong tuần hiện tại (Thứ 2 đến CN)</p>
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                        <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block">Lãi Tuần Này</span>
+                        <h3 id="stat-tab-week-interest" class="text-2xl sm:text-3xl font-black text-emerald-400 mt-2 truncate">0đ</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thu được từ đầu tuần đến nay</p>
                     </div>
                     <!-- KPI 4 -->
-                    <div class="glass-card p-6 rounded-2xl border border-slate-800 bg-slate-800/40 border-l-4 border-l-accent-500">
-                        <span class="text-xs text-accent-400 font-semibold uppercase tracking-wider block">Lãi Thu Được Tháng Này</span>
-                        <h3 id="stat-tab-month-interest" class="text-3xl font-black text-accent-400 mt-2">0đ</h3>
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-accent-500">
+                        <span class="text-xs text-accent-400 font-semibold uppercase tracking-wider block">Lãi Tháng Này</span>
+                        <h3 id="stat-tab-month-interest" class="text-2xl sm:text-3xl font-black text-accent-400 mt-2 truncate">0đ</h3>
                         <p class="text-[10px] text-slate-500 mt-1">Tiền lãi thực nhận trong tháng hiện tại</p>
+                    </div>
+                    <!-- KPI 5: HĐ Thêm Mới Trong Tháng -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-indigo-500">
+                        <span class="text-xs text-indigo-400 font-semibold uppercase tracking-wider block">HĐ Đã Thêm</span>
+                        <h3 id="stat-tab-month-added-count" class="text-2xl sm:text-3xl font-black text-indigo-400 mt-2 truncate">0</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng được lập mới trong tháng này</p>
+                    </div>
+                    <!-- KPI 6: HĐ Tất Toán Trong Tháng -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-pink-500">
+                        <span class="text-xs text-pink-400 font-semibold uppercase tracking-wider block">HĐ Tất Toán</span>
+                        <h3 id="stat-tab-month-closed-count" class="text-2xl sm:text-3xl font-black text-pink-400 mt-2 truncate">0</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Hợp đồng đã thanh lý/chuộc đồ tháng này</p>
                     </div>
                 </div>
 
@@ -556,9 +569,9 @@
                             <table class="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr class="border-b border-slate-800 text-slate-400">
-                                        <th class="py-2.5 font-semibold">Loại Tài Sản</th>
-                                        <th class="py-2.5 font-semibold text-center">Số HĐ</th>
-                                        <th class="py-2.5 font-semibold text-right">Tổng Vốn Cầm</th>
+                                        <th class="py-2.5 px-4 font-semibold">Loại Tài Sản</th>
+                                        <th class="py-2.5 px-4 font-semibold text-center">Số HĐ</th>
+                                        <th class="py-2.5 px-4 font-semibold text-right">Tổng Vốn Cầm</th>
                                     </tr>
                                 </thead>
                                 <tbody id="stat-asset-table-body" class="divide-y divide-slate-800/50 text-slate-200">
@@ -577,11 +590,11 @@
                             <table class="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr class="border-b border-slate-800 text-slate-400">
-                                        <th class="py-2.5 font-semibold">Ngày Nhận</th>
-                                        <th class="py-2.5 font-semibold">Mã HĐ</th>
-                                        <th class="py-2.5 font-semibold">Khách Hàng</th>
-                                        <th class="py-2.5 font-semibold text-right">Tiền Lãi Thu</th>
-                                        <th class="py-2.5 font-semibold">Ghi Chú</th>
+                                        <th class="py-2.5 px-4 font-semibold">Ngày Nhận</th>
+                                        <th class="py-2.5 px-4 font-semibold">Mã HĐ</th>
+                                        <th class="py-2.5 px-4 font-semibold">Khách Hàng</th>
+                                        <th class="py-2.5 px-4 font-semibold text-right">Tiền Lãi Thu</th>
+                                        <th class="py-2.5 px-4 font-semibold">Ghi Chú</th>
                                     </tr>
                                 </thead>
                                 <tbody id="stat-recent-payments-body" class="divide-y divide-slate-800/50 text-slate-200">
@@ -596,7 +609,7 @@
         </main>
 
         <!-- FOOTER / BOTTOM NAV (MOBILE ONLY) -->
-        <footer class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 flex items-center justify-around py-3 px-2 shadow-2xl">
+        <footer class="md:hidden floating-mobile-dock flex items-center justify-around">
             <button onclick="switchTab('new-contract')" id="mobile-nav-new-contract" 
                 class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition duration-200">
                 <i class="fa-solid fa-plus-circle text-lg"></i>
