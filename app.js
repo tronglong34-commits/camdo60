@@ -2120,18 +2120,18 @@ function exportReceiptToPDF(contractId) {
     const hasFrontCccdImg = frontCccdImgEl && !frontCccdImgEl.classList.contains('hidden') && frontCccdImgEl.src;
     let frontCccdImgHtml = '';
     if (hasFrontCccdImg) {
-        frontCccdImgHtml = `<img src="${frontCccdImgEl.src}" style="max-height:72px;max-width:100%;border-radius:4px;object-fit:contain;display:block;margin:0 auto;" />`;
+        frontCccdImgHtml = `<img src="${frontCccdImgEl.src}" style="max-height:144px;max-width:100%;border-radius:4px;object-fit:contain;display:block;margin:0 auto;" />`;
     } else {
-        frontCccdImgHtml = `<div style="text-align:center;font-size:24px;color:#aaa;line-height:72px;">💳</div>`;
+        frontCccdImgHtml = `<div style="text-align:center;font-size:24px;color:#aaa;line-height:144px;">💳</div>`;
     }
 
     const backCccdImgEl = document.getElementById('preview-cccd-back-img');
     const hasBackCccdImg = backCccdImgEl && !backCccdImgEl.classList.contains('hidden') && backCccdImgEl.src;
     let backCccdImgHtml = '';
     if (hasBackCccdImg) {
-        backCccdImgHtml = `<img src="${backCccdImgEl.src}" style="max-height:72px;max-width:100%;border-radius:4px;object-fit:contain;display:block;margin:0 auto;" />`;
+        backCccdImgHtml = `<img src="${backCccdImgEl.src}" style="max-height:144px;max-width:100%;border-radius:4px;object-fit:contain;display:block;margin:0 auto;" />`;
     } else {
-        backCccdImgHtml = `<div style="text-align:center;font-size:24px;color:#aaa;line-height:72px;">💳</div>`;
+        backCccdImgHtml = `<div style="text-align:center;font-size:24px;color:#aaa;line-height:144px;">💳</div>`;
     }
 
     const qrBase64 = 'data:image/jpeg;base64,' + (window._qrBase64Cache || '');
@@ -2156,7 +2156,7 @@ function exportReceiptToPDF(contractId) {
                     <div style="font-size:9px;font-weight:700;color:#000;margin-bottom:1px;line-height:1.3;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                     <div style="font-size:8px;font-weight:700;color:#222;margin-bottom:4px;border-bottom:1px solid #777;display:inline-block;padding-bottom:2px;">Độc lập - Tự do - Hạnh phúc</div>
                     <div style="font-size:14px;font-weight:700;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
-                    <div style="font-size:10px;color:#222;margin-top:1px;">Số: <span style="font-weight:700;color:#000;">${previewId}</span></div>
+                    <div style="font-size:14px;font-weight:800;color:#000;margin-top:2px;text-transform:uppercase;">SỐ: </div>
                     <div style="font-size:10px;color:#222;margin-top:1px;">Hotline: 0962772783(ZALO) (Mr. Long)</div>
                 </td>
             </tr>
@@ -2213,13 +2213,13 @@ function exportReceiptToPDF(contractId) {
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:middle;padding-right:10px;">
                     <div style="font-size:8px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px;line-height:1.2;">CCCD MẶT TRƯỚC:</div>
-                    <div style="min-height:76px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
+                    <div style="min-height:148px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
                         ${frontCccdImgHtml}
                     </div>
                 </td>
                 <td style="width:50%;text-align:center;vertical-align:middle;border-left:1px dashed #bbb;padding-left:10px;">
                     <div style="font-size:8px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px;line-height:1.2;">CCCD MẶT SAU:</div>
-                    <div style="min-height:76px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
+                    <div style="min-height:148px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
                         ${backCccdImgHtml}
                     </div>
                 </td>
