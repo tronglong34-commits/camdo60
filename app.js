@@ -692,7 +692,10 @@ function renderActiveContracts() {
                 <!-- Quick Financial Highlights (Gốc & Nợ Lãi) -->
                 <div class="grid grid-cols-2 gap-2 bg-slate-950/50 p-3.5 rounded-2xl border border-white/5">
                     <div>
-                        <p class="text-[9px                    <div class="border-l border-white/5 pl-3">
+                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Vốn Cầm Gốc</p>
+                        <p class="text-base font-extrabold text-white mt-0.5">${formatVND(c.So_Tien_Cam)}</p>
+                    </div>
+                    <div class="border-l border-white/5 pl-3">
                         <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">${isTerminal ? 'Trạng Thái' : 'Lãi Còn Nợ'}</p>
                         <p class="text-base font-extrabold ${isTerminal ? 'text-slate-500' : 'text-amber-500'} mt-0.5">
                             ${isClosed ? 'Tất Toán' : isLiquidated ? 'Đã Thanh Lý' : formatVND(Math.max(0, stats.accrued - stats.collected))}
@@ -1881,7 +1884,6 @@ function exportReceiptToPDF(contractId) {
     const previewName = document.getElementById('preview-name')?.innerText || '';
     const previewPhone = document.getElementById('preview-phone')?.innerText || '';
     const previewAssetType = document.getElementById('preview-asset-type')?.innerText || '';
-    const previewAssetDetailLabel = document.getElementById('preview-asset-detail-label')?.innerText || 'Chi tiết:';
     const previewAssetDetail = document.getElementById('preview-asset-detail')?.innerText || '';
     const previewDate = document.getElementById('preview-date')?.innerText || '';
     const previewAmount = document.getElementById('preview-amount')?.innerText || '0đ';
@@ -1890,10 +1892,8 @@ function exportReceiptToPDF(contractId) {
     const previewSignatureName = document.getElementById('preview-signature-name')?.innerText || '.................';
     const previewTermsNote = document.getElementById('preview-terms-note')?.innerText || 'Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.';
 
-    // QR code base64 (nhúng trực tiếp để tránh lỗi CORS/path)
     const qrBase64 = 'data:image/jpeg;base64,' + (window._qrBase64Cache || '');
     
-    // Tạo element PDF riêng biệt với INLINE CSS hoàn toàn (không dùng Tailwind)
     const pdfContainer = document.createElement('div');
     pdfContainer.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
     document.body.appendChild(pdfContainer);
@@ -1902,82 +1902,76 @@ function exportReceiptToPDF(contractId) {
     <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#000;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
         <div style="border:2px solid #000;padding:18px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
         
-        <!-- Two-Column Header -->
         <table style="width:100%;border-collapse:collapse;margin-bottom:8px;border-bottom:1.5px dashed #000;padding-bottom:8px;">
             <tr>
                 <td style="width:50%;vertical-align:top;text-align:left;padding-right:10px;">
-                    <div style="font-size:14px;font-weight:900;letter-spacing:1px;color:#000;margin-bottom:2px;text-transform:uppercase;">DỊCH VỤ CẦM ĐỒ 60</div>
+                    <div style="font-size:14px;font-weight:700;letter-spacing:1px;color:#000;margin-bottom:2px;text-transform:uppercase;">DỊCH VỤ CẦM ĐỒ 60</div>
                     <div style="font-size:9.5px;color:#222;line-height:1.3;margin-bottom:1px;">ĐC: số 60_ Phước Thiện_ P. long Bình_ TP.HCM</div>
                     <div style="font-size:9.5px;color:#222;line-height:1.3;margin-bottom:1px;">THU MUA XE MÁY CŨ_ ĐIỆN THOẠI CŨ GIÁ CAO</div>
                     <div style="font-size:9.5px;color:#000;font-weight:700;line-height:1.3;margin-top:2px;">Cầm xe máy và ô tô lãi suất thấp nhất khu vực.</div>
                 </td>
                 <td style="width:50%;vertical-align:top;text-align:center;border-left:1px solid #ccc;padding-left:10px;">
-                    <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:1px;line-height:1.3;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                    <div style="font-size:9px;font-weight:700;color:#000;margin-bottom:1px;line-height:1.3;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                     <div style="font-size:8px;font-weight:700;color:#222;margin-bottom:4px;border-bottom:1px solid #777;display:inline-block;padding-bottom:2px;">Độc lập - Tự do - Hạnh phúc</div>
-                    <div style="font-size:14px;font-weight:900;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
+                    <div style="font-size:14px;font-weight:700;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
                     <div style="font-size:10px;color:#222;margin-top:1px;">Số: <span style="font-weight:700;color:#000;">${previewId}</span></div>
                     <div style="font-size:10px;color:#222;margin-top:1px;">Hotline: 0962772783(ZALO) (Mr. Long)</div>
                 </td>
             </tr>
         </table>
         
-        <!-- Aligned Form Details Grid -->
         <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:11px;color:#000;">
             <tr>
                 <td style="width:110px;font-weight:700;color:#333;padding:4px 0;">KHÁCH HÀNG</td>
                 <td style="width:15px;font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;text-transform:uppercase;padding:4px 0;">${previewName}</td>
+                <td style="font-weight:700;color:#000;text-transform:uppercase;padding:4px 0;">${previewName}</td>
             </tr>
             <tr>
                 <td style="font-weight:700;color:#333;padding:4px 0;">ĐIỆN THOẠI</td>
                 <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;padding:4px 0;">${previewPhone}</td>
+                <td style="font-weight:700;color:#000;padding:4px 0;">${previewPhone}</td>
             </tr>
             <tr>
                 <td style="font-weight:700;color:#333;padding:4px 0;">TÀI SẢN CẦM</td>
                 <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;text-transform:uppercase;padding:4px 0;">${previewAssetType} - ${previewAssetDetail}</td>
+                <td style="font-weight:700;color:#000;text-transform:uppercase;padding:4px 0;">${previewAssetType} - ${previewAssetDetail}</td>
             </tr>
             <tr>
                 <td style="font-weight:700;color:#333;padding:4px 0;">SỐ TIỀN CẦM</td>
                 <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;font-size:12px;padding:4px 0;">${previewAmount}</td>
+                <td style="font-weight:700;color:#000;font-size:12px;padding:4px 0;">${previewAmount}</td>
             </tr>
             <tr>
                 <td style="font-weight:700;color:#333;padding:4px 0;">BẰNG CHỮ</td>
                 <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;text-transform:uppercase;padding:4px 0;">${previewAmountWords}</td>
+                <td style="font-weight:700;color:#000;text-transform:uppercase;padding:4px 0;">${previewAmountWords}</td>
             </tr>
             <tr>
                 <td style="font-weight:700;color:#333;padding:4px 0;">NGÀY CẦM</td>
                 <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;padding:4px 0;">${previewDate}</td>
+                <td style="font-weight:700;color:#000;padding:4px 0;">${previewDate}</td>
             </tr>
             <tr>
                 <td style="font-weight:700;color:#333;padding:4px 0;">LÃI THỎA THUẬN</td>
                 <td style="font-weight:700;color:#333;padding:4px 0;">:</td>
-                <td style="font-weight:900;color:#000;padding:4px 0;">${previewInterestNote}</td>
+                <td style="font-weight:700;color:#000;padding:4px 0;">${previewInterestNote}</td>
             </tr>
         </table>
         
-        <!-- Đường kẻ nét đứt -->
         <div style="border-bottom:1px dashed #bbb;margin:8px 0;"></div>
         
-        <!-- Điều khoản lưu ý của khách hàng -->
         <div style="font-size:9.5px;color:#222;line-height:1.4;margin-bottom:8px;">
-            <div style="font-weight:800;color:#000;margin-bottom:3px;text-transform:uppercase;">KHÁCH HÀNG LƯU Ý:</div>
+            <div style="font-weight:700;color:#000;margin-bottom:3px;text-transform:uppercase;">KHÁCH HÀNG LƯU Ý:</div>
             <div style="margin-bottom:2px;">Tài sản thế chấp trên thuộc quyền sở hữu của tôi. Tôi cam đoan Nếu sai tôi hoàn toàn chịu trách nhiệm trước pháp luật.</div>
             <div style="margin-bottom:2px;">${previewTermsNote}</div>
             <div>Nếu đánh mất Giấy mà Giấy đó đã có người đến chuộc đồ, đồ không còn chúng tôi không chịu trách nhiệm.</div>
         </div>
         
-        <!-- Zalo QR Code -->
         <div style="text-align:center;margin:6px 0;padding-top:6px;border-top:1px dashed #bbb;">
             <div style="font-size:8.5px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
             <img src="${qrBase64}" style="width:75px;height:75px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
         </div>
         
-        <!-- Chữ ký -->
         <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-size:10px;font-weight:700;color:#000;">
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:top;">
@@ -1986,7 +1980,7 @@ function exportReceiptToPDF(contractId) {
                 </td>
                 <td style="width:50%;text-align:center;vertical-align:top;">
                     <div style="text-transform:uppercase;margin-bottom:40px;">KHÁCH HÀNG</div>
-                    <div style="font-weight:800;color:#000;text-transform:uppercase;">${previewSignatureName}</div>
+                    <div style="font-weight:700;color:#000;text-transform:uppercase;">${previewSignatureName}</div>
                 </td>
             </tr>
         </table>
@@ -2012,40 +2006,45 @@ function exportReceiptToPDF(contractId) {
         jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
     };
     
-    return html2pdf().set(opt).from(renderEl).toPdf().get('pdf').then(function(pdf) {
-        // Lưu file PDF về máy
-        pdf.save(`HoaDon_${contractId}.pdf`);
-        
-        // Dọn dẹp element tạm
-        if (pdfContainer.parentNode) {
-            pdfContainer.parentNode.removeChild(pdfContainer);
-        }
-        
-        // Upload lên Google Drive (chạy ngầm) - Lấy datauristring trực tiếp từ đối tượng pdf đã dựng sẵn
-        if (gasUrl && !isDemoMode) {
-            try {
-                const pdfDataUri = pdf.output('datauristring');
-                const payload = {
-                    action: "uploadPDF",
-                    Ma_HD: contractId,
-                    pdf_name: `HoaDon_${contractId}.pdf`,
-                    pdf_data: pdfDataUri
-                };
-                postToAPI(payload).then(res => {
-                    if (res && res.success) {
-                        showToast(`Đã lưu hóa đơn ${contractId} lên Google Drive!`, "success");
+    // Đợi layout và tải font để tránh lỗi diacritics fallback của trình duyệt
+    return new Promise(function(resolve) {
+        setTimeout(function() {
+            document.fonts.ready.then(function() {
+                html2pdf().set(opt).from(renderEl).toPdf().get('pdf').then(function(pdf) {
+                    // Lưu file PDF về máy
+                    pdf.save(`HoaDon_${contractId}.pdf`);
+                    
+                    // Dọn dẹp element tạm
+                    if (pdfContainer.parentNode) {
+                        pdfContainer.parentNode.removeChild(pdfContainer);
                     }
+                    
+                    // Upload lên Google Drive (chạy ngầm)
+                    if (gasUrl && !isDemoMode) {
+                        try {
+                            const pdfDataUri = pdf.output('datauristring');
+                            const payload = {
+                                action: "uploadPDF",
+                                Ma_HD: contractId,
+                                pdf_name: `HoaDon_${contractId}.pdf`,
+                                pdf_data: pdfDataUri
+                            };
+                            postToAPI(payload).then(res => {
+                                if (res && res.success) {
+                                    showToast(`Đã lưu hóa đơn ${contractId} lên Google Drive!`, "success");
+                                }
+                            });
+                        } catch (err) {
+                            console.error("Lỗi trích xuất PDF data URI:", err);
+                        }
+                    }
+                    resolve();
+                }).catch(function(err) {
+                    console.error("PDF generation error:", err);
+                    resolve();
                 });
-            } catch (err) {
-                console.error("Lỗi trích xuất PDF data URI:", err);
-            }
-        }
-    }).catch(function(err) {
-        // Dọn dẹp khi lỗi
-        if (pdfContainer.parentNode) {
-            pdfContainer.parentNode.removeChild(pdfContainer);
-        }
-        console.error("Lỗi xuất PDF:", err);
+            });
+        }, 150);
     });
 }
 

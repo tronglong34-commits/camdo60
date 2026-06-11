@@ -11,7 +11,7 @@
 
 .theme-light {
     /* Brand Light (Deep/Solid) */
-    --color-brand-400: #3b82f6;
+    --color-brand-400: #1d4ed8; /* Increased contrast for light mode labels/text */
     --color-brand-500: #1e40af;
     --color-brand-600: #1e3a8a;
     
@@ -463,4 +463,78 @@ body::after {
     border: 1px solid #cbd5e1 !important;
     color: #0f172a !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Card internal highlights and backgrounds in Light Mode */
+.theme-light .glass-card .bg-slate-950\/50,
+.theme-light .glass-card .bg-slate-950\/45,
+.theme-light .glass-card .bg-slate-950\/40,
+.theme-light .glass-card .bg-slate-950\/30 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+.theme-light .glass-card .divide-white\/5 > :not([hidden]) ~ :not([hidden]),
+.theme-light .glass-card .border-white\/5,
+.theme-light .glass-card .border-white\/10,
+.theme-light .glass-card .border-white\/20 {
+    border-color: #e2e8f0 !important;
+}
+
+/* Text overrides in Light Mode for high contrast readability */
+.theme-light .glass-card .text-white {
+    color: #0f172a !important; /* Dark text for values */
+}
+
+.theme-light .glass-card .text-slate-100 {
+    color: #0f172a !important;
+}
+
+.theme-light .glass-card .text-slate-200 {
+    color: #1e293b !important; /* Slate 800 for sub-values */
+}
+
+.theme-light .glass-card .text-slate-300 {
+    color: #1e293b !important; /* Inherent text color adjustment */
+}
+
+.theme-light .glass-card .text-slate-400 {
+    color: #334155 !important; /* Darker slate for readability */
+}
+
+.theme-light .glass-card .text-slate-500 {
+    color: #475569 !important; /* Slate 600 for labels (much higher contrast on #f8fafc) */
+}
+
+.theme-light .glass-card .text-purple-400 {
+    color: #6d28d9 !important; /* Purple 700 - high contrast for collected interest */
+}
+
+.theme-light .glass-card .text-amber-500 {
+    color: #c2410c !important; /* Orange 700 - high contrast for active debt */
+}
+
+/* Note block (Ghi chú) in Light Mode */
+.theme-light .glass-card .bg-amber-500\/5 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+}
+
+.theme-light .glass-card .text-amber-200\/90 {
+    color: #92400e !important;
+}
+
+.theme-light .glass-card .text-amber-400 {
+    color: #b45309 !important;
+}
+
+/* Secondary Button "Chuộc đồ" in Light Mode */
+.theme-light .glass-card button.bg-slate-900\/60 {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+}
+.theme-light .glass-card button.bg-slate-900\/60:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
 }
