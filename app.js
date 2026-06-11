@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Format currency inputs on focus/blur to prevent Gboard duplication/IME issues entirely while keeping live preview updates
-    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input'];
+    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input', 'modal-edit-amount-input'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -147,6 +147,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const liquidateContractForm = document.getElementById('liquidate-contract-form');
     if (liquidateContractForm) {
         liquidateContractForm.addEventListener('submit', handleLiquidateContract);
+    }
+    
+    const editContractForm = document.getElementById('edit-contract-form');
+    if (editContractForm) {
+        editContractForm.addEventListener('submit', handleEditContract);
     }
     
     const settingsForm = document.getElementById('settings-form');
@@ -1752,6 +1757,9 @@ function openContractDetailsModal(hdId) {
     const repawnBtn = document.getElementById('detail-modal-repawn-btn');
     const liquidateBtn = document.getElementById('detail-modal-liquidate-btn');
     
+    // Setup Edit button
+    const editBtn = document.getElementById('detail-modal-edit-btn');
+    
     if (contract.Trang_Thai === 'Active' || contract.Trang_Thai === 'Liquidating') {
         payBtn.classList.remove('hidden');
         payBtn.onclick = () => {
@@ -1767,6 +1775,14 @@ function openContractDetailsModal(hdId) {
         
         if (repawnBtn) repawnBtn.classList.add('hidden');
         
+        if (editBtn) {
+            editBtn.classList.remove('hidden');
+            editBtn.onclick = () => {
+                closeContractDetailsModal();
+                openEditContractModal(hdId);
+            };
+        }
+        
         if (liquidateBtn) {
             liquidateBtn.classList.remove('hidden');
             liquidateBtn.onclick = () => {
@@ -1778,6 +1794,7 @@ function openContractDetailsModal(hdId) {
         payBtn.classList.add('hidden');
         closeHdBtn.classList.add('hidden');
         if (liquidateBtn) liquidateBtn.classList.add('hidden');
+        if (editBtn) editBtn.classList.add('hidden');
         
         if (repawnBtn) {
             repawnBtn.classList.remove('hidden');
@@ -2303,6 +2320,122 @@ function exportReceiptToPDF(contractId) {
             });
         }, 150);
     });
+}
+
+// ==================== EDIT CONTRACT ====================
+function openEditContractModal(hdId) {
+    const contract = state.contracts.find(c => c.Ma_HD === hdId);
+    if (!contract) return;
+    
+    document.getElementById('modal-edit-hd-id').value = hdId;
+    document.getElementById('modal-edit-hd-display').innerText = hdId;
+    document.getElementById('modal-edit-customer-display').innerText = contract.Ten_Khach_Hang;
+    
+    const currentAmount = parseFloat(contract.So_Tien_Cam) || 0;
+    document.getElementById('modal-edit-current-amount').innerText = formatVND(currentAmount);
+    document.getElementById('modal-edit-amount-input').value = formatNumber(currentAmount);
+    document.getElementById('modal-edit-notes').value = contract.Ghi_Chu || "";
+    document.getElementById('modal-edit-reason').value = "";
+    
+    document.getElementById('edit-contract-modal').classList.remove('hidden');
+}
+
+function closeEditContractModal() {
+    document.getElementById('edit-contract-modal').classList.add('hidden');
+}
+
+async function handleEditContract(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+    }
+    isSubmitting = true;
+    
+    try {
+        const hdId = document.getElementById('modal-edit-hd-id').value;
+        const rawAmount = document.getElementById('modal-edit-amount-input').value.replace(/,/g, '');
+        const newAmount = parseFloat(rawAmount) || 0;
+        const newNotes = document.getElementById('modal-edit-notes').value.trim();
+        const reason = document.getElementById('modal-edit-reason').value.trim();
+        
+        if (newAmount <= 0) {
+            showToast("Số tiền cầm phải lớn hơn 0!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        
+        if (!reason) {
+            showToast("Vui lòng nhập lý do chỉnh sửa!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        
+        showLoading(true, "Đang cập nhật hợp đồng...");
+        
+        const contract = state.contracts.find(c => c.Ma_HD === hdId);
+        const oldAmount = contract ? (parseFloat(contract.So_Tien_Cam) || 0) : 0;
+        const oldNotes = contract ? (contract.Ghi_Chu || "") : "";
+        
+        const payload = {
+            action: "editContract",
+            Ma_HD: hdId,
+            So_Tien_Cam: newAmount,
+            Ghi_Chu: newNotes,
+            Ly_Do: reason
+        };
+        
+        const res = await postToAPI(payload);
+        
+        if (res.success) {
+            // Cập nhật local state
+            const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
+            if (contractIdx > -1) {
+                state.contracts[contractIdx].So_Tien_Cam = newAmount;
+                state.contracts[contractIdx].Ghi_Chu = newNotes;
+            }
+            
+            localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+            
+            closeEditContractModal();
+            
+            let changeLog = `Sửa HĐ ${hdId}: `;
+            if (oldAmount !== newAmount) {
+                changeLog += `Tiền cầm ${formatVND(oldAmount)} → ${formatVND(newAmount)}. `;
+            }
+            if (oldNotes !== newNotes) {
+                changeLog += `Ghi chú đã cập nhật. `;
+            }
+            changeLog += `Lý do: ${reason}`;
+            
+            showToast(changeLog, "success");
+            renderAll();
+        } else {
+            showToast("Lỗi khi sửa hợp đồng: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handleEditContract:", error);
+        showToast("Đã xảy ra lỗi hệ thống khi sửa hợp đồng!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
+    }
 }
 
 // ==================== LIQUIDATION HELPERS ====================

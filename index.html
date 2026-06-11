@@ -845,6 +845,9 @@
                 <div class="flex flex-wrap gap-3 pt-4 border-t border-slate-800 items-center justify-between w-full">
                     <!-- Administrative actions (Left side) -->
                     <div class="flex flex-wrap gap-2">
+                        <button id="detail-modal-edit-btn" class="px-4 py-2.5 bg-amber-600/10 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/20 hover:border-amber-500 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-md hidden">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa HĐ
+                        </button>
                         <button id="detail-modal-liquidate-btn" class="px-4 py-2.5 bg-orange-600/10 hover:bg-orange-600 text-orange-400 hover:text-white border border-orange-500/20 hover:border-orange-500 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-md hidden">
                             <i class="fa-solid fa-scale-balanced"></i> Thanh Lý
                         </button>
@@ -1097,6 +1100,64 @@
     </div>
 
 
+    <!-- ==================== MODAL: SỬA HỢP ĐỒNG ==================== -->
+    <div id="edit-contract-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-6 rounded-2xl glass-card shadow-2xl relative border border-slate-800 bg-slate-900">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-amber-500"></i> Sửa Hợp Đồng <span id="modal-edit-hd-display" class="text-amber-400 font-extrabold">HD0000</span>
+                </h3>
+                <button onclick="closeEditContractModal()" class="text-slate-400 hover:text-white transition duration-200">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="edit-contract-form" class="mt-4 space-y-4">
+                <input type="hidden" id="modal-edit-hd-id">
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Khách Hàng</label>
+                    <p id="modal-edit-customer-display" class="text-sm text-slate-200 font-bold">...</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số Tiền Cầm Hiện Tại</label>
+                    <p id="modal-edit-current-amount" class="text-base text-emerald-400 font-bold">0đ</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số Tiền Cầm Mới (VND) <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-edit-amount-input" required
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm font-bold text-emerald-400 bg-slate-900 border border-slate-700/50" placeholder="0">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Ghi Chú Hợp Đồng</label>
+                    <textarea id="modal-edit-notes" rows="3"
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900 border border-slate-700/50" placeholder="Nhập ghi chú hợp đồng..."></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Lý Do Chỉnh Sửa <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-edit-reason" required
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900 border border-slate-700/50" placeholder="VD: Khách lấy sớm giảm giá, Sửa lỗi nhập liệu...">
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeEditContractModal()"
+                        class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition duration-200">
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit"
+                        class="flex-1 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-bold rounded-xl transition duration-200 shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-save"></i> Lưu Thay Đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <!-- ==================== LIGHTBOX MODAL ==================== -->
     <div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 hidden" onclick="closeLightbox()">
         <button class="absolute top-5 right-5 text-white/70 hover:text-white text-2xl transition duration-150">
@@ -1105,6 +1166,6 @@
         <img id="lightbox-image" class="max-h-full max-w-full rounded-lg object-contain shadow-2xl">
     </div>
     <!-- ==================== JAVASCRIPT LOGIC ==================== -->
-    <script src="app.js?v=9" defer></script>
+    <script src="app.js?v=10" defer></script>
 </body>
 </html>

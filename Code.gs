@@ -306,6 +306,42 @@ function doPost(e) {
         message: "Hợp đồng " + maHd + " đã chuyển trạng thái thành " + newStatus
       });
       
+    } else if (action === "editContract") {
+      var sheetCamDo = ss.getSheetByName("Danh_Sach_Cam_Do");
+      if (!sheetCamDo) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy Tab Danh_Sach_Cam_Do" });
+      }
+      
+      var dataCamDo = sheetCamDo.getDataRange().getValues();
+      var maHd = params.Ma_HD;
+      var foundRow = -1;
+      
+      for (var i = 1; i < dataCamDo.length; i++) {
+        if (dataCamDo[i][0].toString().trim() === maHd.toString().trim()) {
+          foundRow = i + 1; // 1-indexed and header row offset
+          break;
+        }
+      }
+      
+      if (foundRow === -1) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy hợp đồng " + maHd });
+      }
+      
+      // Cập nhật Số tiền cầm (Cột F = cột 6)
+      if (params.So_Tien_Cam !== undefined) {
+        sheetCamDo.getRange(foundRow, 6).setValue(parseFloat(params.So_Tien_Cam) || 0);
+      }
+      
+      // Cập nhật Ghi chú (Cột I = cột 9)
+      if (params.Ghi_Chu !== undefined) {
+        sheetCamDo.getRange(foundRow, 9).setValue(params.Ghi_Chu || "");
+      }
+      
+      return createJsonResponse({
+        success: true,
+        message: "Hợp đồng " + maHd + " đã được cập nhật thành công."
+      });
+      
     } else if (action === "uploadPDF") {
       var pdfUrl = "";
       if (params.pdf_data && params.pdf_name) {
