@@ -1899,19 +1899,19 @@ function exportReceiptToPDF(contractId) {
     document.body.appendChild(pdfContainer);
     
     pdfContainer.innerHTML = `
-    <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#000;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
+    <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#000;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
         <div style="border:2px solid #000;padding:18px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
         
         <!-- Two-Column Header -->
         <table style="width:100%;border-collapse:collapse;margin-bottom:8px;border-bottom:1.5px dashed #000;padding-bottom:8px;">
             <tr>
-                <td style="width:50%;vertical-align:top;font-family:sans-serif;text-align:left;padding-right:10px;">
+                <td style="width:50%;vertical-align:top;text-align:left;padding-right:10px;">
                     <div style="font-size:14px;font-weight:900;letter-spacing:1px;color:#000;margin-bottom:2px;text-transform:uppercase;">DỊCH VỤ CẦM ĐỒ 60</div>
                     <div style="font-size:9.5px;color:#222;line-height:1.3;margin-bottom:1px;">ĐC: số 60_ Phước Thiện_ P. long Bình_ TP.HCM</div>
                     <div style="font-size:9.5px;color:#222;line-height:1.3;margin-bottom:1px;">THU MUA XE MÁY CŨ_ ĐIỆN THOẠI CŨ GIÁ CAO</div>
                     <div style="font-size:9.5px;color:#000;font-weight:700;line-height:1.3;margin-top:2px;">Cầm xe máy và ô tô lãi suất thấp nhất khu vực.</div>
                 </td>
-                <td style="width:50%;vertical-align:top;font-family:sans-serif;text-align:center;border-left:1px solid #ccc;padding-left:10px;">
+                <td style="width:50%;vertical-align:top;text-align:center;border-left:1px solid #ccc;padding-left:10px;">
                     <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:1px;line-height:1.3;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                     <div style="font-size:8px;font-weight:700;color:#222;margin-bottom:4px;border-bottom:1px solid #777;display:inline-block;padding-bottom:2px;">Độc lập - Tự do - Hạnh phúc</div>
                     <div style="font-size:14px;font-weight:900;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
@@ -1922,7 +1922,7 @@ function exportReceiptToPDF(contractId) {
         </table>
         
         <!-- Aligned Form Details Grid -->
-        <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:11px;font-family:sans-serif;color:#000;">
+        <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:11px;color:#000;">
             <tr>
                 <td style="width:110px;font-weight:700;color:#333;padding:4px 0;">KHÁCH HÀNG</td>
                 <td style="width:15px;font-weight:700;color:#333;padding:4px 0;">:</td>
@@ -1964,7 +1964,7 @@ function exportReceiptToPDF(contractId) {
         <div style="border-bottom:1px dashed #bbb;margin:8px 0;"></div>
         
         <!-- Điều khoản lưu ý của khách hàng -->
-        <div style="font-family:sans-serif;font-size:9.5px;color:#222;line-height:1.4;margin-bottom:8px;">
+        <div style="font-size:9.5px;color:#222;line-height:1.4;margin-bottom:8px;">
             <div style="font-weight:800;color:#000;margin-bottom:3px;text-transform:uppercase;">KHÁCH HÀNG LƯU Ý:</div>
             <div style="margin-bottom:2px;">Tài sản thế chấp trên thuộc quyền sở hữu của tôi. Tôi cam đoan Nếu sai tôi hoàn toàn chịu trách nhiệm trước pháp luật.</div>
             <div style="margin-bottom:2px;">${previewTermsNote}</div>
@@ -1972,13 +1972,13 @@ function exportReceiptToPDF(contractId) {
         </div>
         
         <!-- Zalo QR Code -->
-        <div style="text-align:center;margin:6px 0;padding-top:6px;border-top:1px dashed #bbb;font-family:sans-serif;">
+        <div style="text-align:center;margin:6px 0;padding-top:6px;border-top:1px dashed #bbb;">
             <div style="font-size:8.5px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
             <img src="${qrBase64}" style="width:75px;height:75px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
         </div>
         
         <!-- Chữ ký -->
-        <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-family:sans-serif;font-size:10px;font-weight:700;color:#000;">
+        <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-size:10px;font-weight:700;color:#000;">
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:top;">
                     <div style="text-transform:uppercase;margin-bottom:40px;">CHỦ TIỆM</div>
