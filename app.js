@@ -88,75 +88,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-    // Bind real-time currency formatting with caret preservation to prevent all cursor-jumping & Gboard duplication / IME issues
+    // Format currency inputs on focus/blur to prevent Gboard duplication/IME issues entirely while keeping live preview updates
     const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            let lastValue = el.value;
-
+            // On focus: strip all formatting commas so the user types a clean raw number
             el.addEventListener('focus', function() {
-                lastValue = this.value;
+                this.value = this.value.replace(/\D/g, '');
             });
 
+            // On input: clean non-digit chars if any (e.g. from copy-pasting)
             el.addEventListener('input', function() {
-                let value = this.value;
-                let cursorPosition = this.selectionStart;
-
-                // 1. If value hasn't changed, do nothing
-                if (value === lastValue) {
-                    return;
+                const clean = this.value.replace(/\D/g, '');
+                if (this.value !== clean) {
+                    this.value = clean;
                 }
+                updateReceiptPreview();
+            });
 
-                // 2. Count digits after cursor in current raw text
-                let digitsAfterCursor = 0;
-                for (let i = cursorPosition; i < value.length; i++) {
-                    if (/\d/.test(value[i])) {
-                        digitsAfterCursor++;
-                    }
+            // On blur: format with commas for a polished display
+            el.addEventListener('blur', function() {
+                const clean = this.value.replace(/\D/g, '');
+                if (clean !== "") {
+                    const parsed = parseInt(clean, 10);
+                    this.value = isNaN(parsed) ? "" : formatNumber(parsed);
+                } else {
+                    this.value = "";
                 }
-
-                // Extract only digits
-                const lastClean = lastValue.replace(/\D/g, '');
-                const newClean = value.replace(/\D/g, '');
-                let finalClean = newClean;
-
-                // 3. Comma-deletion correction:
-                // If a deletion occurred (length decreased) but the digit count is the same,
-                // it means a comma (or formatting char) was deleted.
-                // We should programmatically delete the digit to the left of the deleted comma.
-                if (value.length < lastValue.length && lastClean.length === newClean.length) {
-                    const cleanCursorPos = newClean.length - digitsAfterCursor;
-                    if (cleanCursorPos > 0) {
-                        finalClean = newClean.slice(0, cleanCursorPos - 1) + newClean.slice(cleanCursorPos);
-                    }
-                }
-
-                // 4. Format the final clean string
-                let formatted = "";
-                if (finalClean !== "") {
-                    const parsed = parseInt(finalClean, 10);
-                    formatted = isNaN(parsed) ? "" : formatNumber(parsed);
-                }
-
-                // 5. Update input value and cache it
-                this.value = formatted;
-                lastValue = formatted;
-
-                // 6. Calculate new cursor position based on digitsAfterCursor count
-                let newPosition = formatted.length;
-                let digitsSeen = 0;
-                while (newPosition > 0 && digitsSeen < digitsAfterCursor) {
-                    newPosition--;
-                    if (/\d/.test(formatted[newPosition])) {
-                        digitsSeen++;
-                    }
-                }
-
-                // 7. Restore cursor position
-                this.setSelectionRange(newPosition, newPosition);
-
-                // 8. Update preview
                 updateReceiptPreview();
             });
         }
@@ -450,8 +409,8 @@ function calculateInterest(principal, assetType, days) {
             return interest;
         }
     } else {
-        const weeks = Math.max(1, Math.ceil(calcDays / 7));
-        return weeks * 0.02 * principal;
+        const cycles = Math.max(1, Math.ceil(calcDays / 14));
+        return cycles * 0.04 * principal;
     }
 }
 
@@ -1039,9 +998,18 @@ function updateReceiptPreview() {
     const noteEl = document.getElementById('preview-interest-note');
     if (noteEl) {
         if (assetType === 'Honda') {
-            noteEl.innerText = "Chu kỳ 30 ngày";
+            noteEl.innerText = "Chu kỳ 1 tháng";
         } else {
-            noteEl.innerText = "Chu kỳ 7 ngày";
+            noteEl.innerText = "Chu kỳ 14 ngày";
+        }
+    }
+    
+    const termsEl = document.getElementById('preview-terms-note');
+    if (termsEl) {
+        if (assetType === 'Honda') {
+            termsEl.innerText = "Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.";
+        } else {
+            termsEl.innerText = "Biên nhận này có giá trị 14 ngày. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.";
         }
     }
 }
@@ -1669,9 +1637,18 @@ async function printContractReceipt(contractId) {
         const noteEl = document.getElementById('preview-interest-note');
         if (noteEl) {
             if (contract.Loai_Tai_San === 'Honda') {
-                noteEl.innerText = "Chu kỳ 30 ngày";
+                noteEl.innerText = "Chu kỳ 1 tháng";
             } else {
-                noteEl.innerText = "Chu kỳ 7 ngày";
+                noteEl.innerText = "Chu kỳ 14 ngày";
+            }
+        }
+        
+        const termsEl = document.getElementById('preview-terms-note');
+        if (termsEl) {
+            if (contract.Loai_Tai_San === 'Honda') {
+                termsEl.innerText = "Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.";
+            } else {
+                termsEl.innerText = "Biên nhận này có giá trị 14 ngày. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.";
             }
         }
         
@@ -1911,6 +1888,7 @@ function exportReceiptToPDF(contractId) {
     const previewAmountWords = document.getElementById('preview-amount-words')?.innerText || '';
     const previewInterestNote = document.getElementById('preview-interest-note')?.innerText || '';
     const previewSignatureName = document.getElementById('preview-signature-name')?.innerText || '.................';
+    const previewTermsNote = document.getElementById('preview-terms-note')?.innerText || 'Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.';
 
     // QR code base64 (nhúng trực tiếp để tránh lỗi CORS/path)
     const qrBase64 = 'data:image/jpeg;base64,' + (window._qrBase64Cache || '');
@@ -1989,7 +1967,7 @@ function exportReceiptToPDF(contractId) {
         <div style="font-family:sans-serif;font-size:9.5px;color:#222;line-height:1.4;margin-bottom:8px;">
             <div style="font-weight:800;color:#000;margin-bottom:3px;text-transform:uppercase;">KHÁCH HÀNG LƯU Ý:</div>
             <div style="margin-bottom:2px;">Tài sản thế chấp trên thuộc quyền sở hữu của tôi. Tôi cam đoan Nếu sai tôi hoàn toàn chịu trách nhiệm trước pháp luật.</div>
-            <div style="margin-bottom:2px;">Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.</div>
+            <div style="margin-bottom:2px;">${previewTermsNote}</div>
             <div>Nếu đánh mất Giấy mà Giấy đó đã có người đến chuộc đồ, đồ không còn chúng tôi không chịu trách nhiệm.</div>
         </div>
         
