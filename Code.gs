@@ -113,49 +113,13 @@ function doPost(e) {
       }
       
       // Xử lý lưu ảnh tài sản vào Google Drive nếu có dữ liệu gửi lên
-      var imageUrl = "";
-      if (params.image_data && params.image_name) {
-        try {
-          var contentType = params.image_data.substring(5, params.image_data.indexOf(";base64"));
-          var base64Data = params.image_data.substring(params.image_data.indexOf(";base64,") + 8);
-          var bytes = Utilities.base64Decode(base64Data);
-          var blob = Utilities.newBlob(bytes, contentType, params.image_name);
-          
-          // Tìm thư mục lưu trữ: "Quản lý Cầm Đồ 60" -> "lưu hình ảnh"
-          var parentFolderName = "Quản lý Cầm Đồ 60";
-          var childFolderName = "lưu hình ảnh";
-          var targetFolder = null;
-          
-          var parentFolders = DriveApp.getFoldersByName(parentFolderName);
-          if (parentFolders.hasNext()) {
-            var parentFolder = parentFolders.next();
-            var childFolders = parentFolder.getFoldersByName(childFolderName);
-            if (childFolders.hasNext()) {
-              targetFolder = childFolders.next();
-            } else {
-              targetFolder = parentFolder.createFolder(childFolderName);
-            }
-          } else {
-            // Nếu không tìm thấy thư mục cha, tìm thư mục con ở ngoài thư mục gốc
-            var folders = DriveApp.getFoldersByName(childFolderName);
-            if (folders.hasNext()) {
-              targetFolder = folders.next();
-            } else {
-              targetFolder = DriveApp.createFolder(childFolderName);
-            }
-          }
-          
-          var file = targetFolder.createFile(blob);
-          try {
-            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          } catch (err) {
-            // Bỏ qua lỗi nếu chính sách tổ chức (Google Workspace) chặn chia sẻ công khai ngoài tổ chức
-          }
-          imageUrl = file.getUrl();
-        } catch (e) {
-          imageUrl = "Lỗi lưu ảnh: " + e.toString();
-        }
-      }
+      var imageUrl = saveBase64ToDrive(params.image_data, params.image_name);
+      
+      // Xử lý lưu ảnh CCCD mặt trước vào Google Drive nếu có
+      var cccdFrontImageUrl = saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name);
+      
+      // Xử lý lưu ảnh CCCD mặt sau vào Google Drive nếu có
+      var cccdBackImageUrl = saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name);
       
       var rowData = [
         newId,
@@ -167,7 +131,11 @@ function doPost(e) {
         params.Ngay_Cam || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
         "Active", // Trạng thái mặc định là Active
         params.Ghi_Chu || "",
-        imageUrl // Cột J: Hinh_Anh
+        imageUrl, // Cột J: Hinh_Anh
+        "",       // Cột K: PDF_Url (để trống ban đầu)
+        params.So_CCCD || "", // Cột L: So_CCCD
+        cccdFrontImageUrl, // Cột M: Hinh_CCCD_Truoc
+        cccdBackImageUrl // Cột N: Hinh_CCCD_Sau
       ];
       
       sheetCamDo.appendRow(rowData);
@@ -178,13 +146,16 @@ function doPost(e) {
           Ma_HD: newId,
           Ten_Khach_Hang: rowData[1],
           So_Dien_Thoai: rowData[2],
+          So_CCCD: rowData[11],
           Loai_Tai_San: rowData[3],
           Chi_Tiet_Tai_San: rowData[4],
           So_Tien_Cam: rowData[5],
           Ngay_Cam: rowData[6],
           Trang_Thai: rowData[7],
           Ghi_Chu: rowData[8],
-          Hinh_Anh: rowData[9]
+          Hinh_Anh: rowData[9],
+          Hinh_CCCD_Truoc: rowData[12],
+          Hinh_CCCD_Sau: rowData[13]
         }
       });
       
@@ -415,6 +386,48 @@ function doPost(e) {
       success: false,
       error: error.toString()
     });
+  }
+}
+
+function saveBase64ToDrive(base64Data, fileName) {
+  if (!base64Data || !fileName) return "";
+  try {
+    var contentType = base64Data.substring(5, base64Data.indexOf(";base64"));
+    var base64DataClean = base64Data.substring(base64Data.indexOf(";base64,") + 8);
+    var bytes = Utilities.base64Decode(base64DataClean);
+    var blob = Utilities.newBlob(bytes, contentType, fileName);
+    
+    var parentFolderName = "Quản lý Cầm Đồ 60";
+    var childFolderName = "lưu hình ảnh";
+    var targetFolder = null;
+    
+    var parentFolders = DriveApp.getFoldersByName(parentFolderName);
+    if (parentFolders.hasNext()) {
+      var parentFolder = parentFolders.next();
+      var childFolders = parentFolder.getFoldersByName(childFolderName);
+      if (childFolders.hasNext()) {
+        targetFolder = childFolders.next();
+      } else {
+        targetFolder = parentFolder.createFolder(childFolderName);
+      }
+    } else {
+      var folders = DriveApp.getFoldersByName(childFolderName);
+      if (folders.hasNext()) {
+        targetFolder = folders.next();
+      } else {
+        targetFolder = DriveApp.createFolder(childFolderName);
+      }
+    }
+    
+    var file = targetFolder.createFile(blob);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (err) {
+      // Bỏ qua lỗi chia sẻ ngoài tổ chức
+    }
+    return file.getUrl();
+  } catch (e) {
+    return "Lỗi lưu ảnh: " + e.toString();
   }
 }
 

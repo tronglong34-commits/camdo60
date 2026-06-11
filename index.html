@@ -241,7 +241,7 @@
                         </div>
 
                         <form id="new-contract-form" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tên Khách Hàng <span class="text-red-500">*</span></label>
                                     <input type="text" id="customer-name" required
@@ -251,6 +251,11 @@
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số Điện Thoại <span class="text-red-500">*</span></label>
                                     <input type="tel" id="customer-phone" required
                                         class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="0987654321">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số CCCD <span class="text-red-500">*</span></label>
+                                    <input type="text" id="customer-cccd" required
+                                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="Ví dụ: 012345678912">
                                 </div>
                             </div>
 
@@ -292,20 +297,59 @@
                                     class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="Nhập ghi chú (nếu có)..."></textarea>
                             </div>
 
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Hình Ảnh Tài Sản</label>
-                                <div class="relative flex items-center justify-center border border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-4 transition duration-200 cursor-pointer bg-slate-900/40">
-                                    <input type="file" id="asset-image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="previewUploadImage(this)">
-                                    <div class="text-center space-y-1 text-slate-400" id="upload-placeholder">
-                                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-500"></i>
-                                        <p class="text-xs">Chọn ảnh hoặc chụp hình tài sản</p>
-                                        <p class="text-[10px] text-slate-500">Hỗ trợ JPG, PNG (tự động nén)</p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Hình ảnh tài sản -->
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Hình Ảnh Tài Sản</label>
+                                    <div style="position: relative;" class="relative flex items-center justify-center border border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-3 transition duration-200 cursor-pointer bg-slate-900/40 h-32 overflow-hidden">
+                                        <input type="file" id="asset-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewUploadImage(this, 'asset')">
+                                        <div class="text-center space-y-1 text-slate-400" id="upload-placeholder">
+                                            <i class="fa-solid fa-cloud-arrow-up text-xl text-slate-500"></i>
+                                            <p class="text-[10px] leading-tight">Ảnh tài sản</p>
+                                            <p class="text-[8px] text-slate-500">Chọn/Chụp ảnh</p>
+                                        </div>
+                                        <div id="image-upload-preview-container" class="hidden relative w-full h-full flex items-center justify-center z-20">
+                                            <img id="image-upload-preview" class="max-h-full max-w-full rounded-lg object-contain">
+                                            <button type="button" onclick="clearUploadedImage(event, 'asset')" class="absolute top-0 right-0 p-1 bg-red-600 text-white rounded-full text-xs hover:bg-red-500 transition duration-150">
+                                                <i class="fa-solid fa-times w-3.5 h-3.5 flex items-center justify-center"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div id="image-upload-preview-container" class="hidden relative w-full h-32 flex items-center justify-center z-20">
-                                        <img id="image-upload-preview" class="max-h-full max-w-full rounded-lg object-contain">
-                                        <button type="button" onclick="clearUploadedImage(event)" class="absolute top-0 right-0 p-1 bg-red-600 text-white rounded-full text-xs hover:bg-red-500 transition duration-150">
-                                            <i class="fa-solid fa-times w-4 h-4 flex items-center justify-center"></i>
-                                        </button>
+                                </div>
+                                <!-- CCCD Mặt Trước -->
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">CCCD Mặt Trước</label>
+                                    <div style="position: relative;" class="relative flex items-center justify-center border border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-3 transition duration-200 cursor-pointer bg-slate-900/40 h-32 overflow-hidden">
+                                        <input type="file" id="cccd-front-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewUploadImage(this, 'cccd-front')">
+                                        <div class="text-center space-y-1 text-slate-400" id="cccd-front-upload-placeholder">
+                                            <i class="fa-solid fa-id-card-clip text-xl text-slate-500"></i>
+                                            <p class="text-[10px] leading-tight">Mặt trước</p>
+                                            <p class="text-[8px] text-slate-500">Chọn/Chụp ảnh</p>
+                                        </div>
+                                        <div id="cccd-front-image-upload-preview-container" class="hidden relative w-full h-full flex items-center justify-center z-20">
+                                            <img id="cccd-front-image-upload-preview" class="max-h-full max-w-full rounded-lg object-contain">
+                                            <button type="button" onclick="clearUploadedImage(event, 'cccd-front')" class="absolute top-0 right-0 p-1 bg-red-600 text-white rounded-full text-xs hover:bg-red-500 transition duration-150">
+                                                <i class="fa-solid fa-times w-3.5 h-3.5 flex items-center justify-center"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- CCCD Mặt Sau -->
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">CCCD Mặt Sau</label>
+                                    <div style="position: relative;" class="relative flex items-center justify-center border border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-3 transition duration-200 cursor-pointer bg-slate-900/40 h-32 overflow-hidden">
+                                        <input type="file" id="cccd-back-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewUploadImage(this, 'cccd-back')">
+                                        <div class="text-center space-y-1 text-slate-400" id="cccd-back-upload-placeholder">
+                                            <i class="fa-solid fa-id-card text-xl text-slate-500"></i>
+                                            <p class="text-[10px] leading-tight">Mặt sau</p>
+                                            <p class="text-[8px] text-slate-500">Chọn/Chụp ảnh</p>
+                                        </div>
+                                        <div id="cccd-back-image-upload-preview-container" class="hidden relative w-full h-full flex items-center justify-center z-20">
+                                            <img id="cccd-back-image-upload-preview" class="max-h-full max-w-full rounded-lg object-contain">
+                                            <button type="button" onclick="clearUploadedImage(event, 'cccd-back')" class="absolute top-0 right-0 p-1 bg-red-600 text-white rounded-full text-xs hover:bg-red-500 transition duration-150">
+                                                <i class="fa-solid fa-times w-3.5 h-3.5 flex items-center justify-center"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -392,10 +436,29 @@
                                         <p>Nếu đánh mất Giấy mà Giấy đó đã có người đến chuộc đồ, đồ không còn chúng tôi không chịu trách nhiệm.</p>
                                     </div>
 
-                                    <!-- Zalo QR Code Contact Card -->
-                                    <div class="flex flex-col items-center justify-center space-y-1 pt-1 border-t border-dashed border-slate-300">
-                                        <p class="text-[8px] text-slate-500 font-semibold tracking-wider uppercase text-center">Quét mã Zalo liên hệ đóng lãi / tất toán:</p>
-                                        <img src="qr.jpg" class="w-20 h-20 object-contain rounded-lg border border-slate-200 shadow-sm">
+                                    <!-- CCCD 2-Sides Card -->
+                                    <div class="grid grid-cols-2 gap-4 pt-1.5 border-t border-dashed border-slate-300 items-stretch">
+                                        <!-- CCCD Front Side (Left) -->
+                                        <div class="flex flex-col items-center justify-center space-y-1">
+                                            <p class="text-[7.5px] text-slate-500 font-semibold tracking-wider uppercase text-center leading-tight">CCCD MẶT TRƯỚC:</p>
+                                            <div id="preview-cccd-front-box" class="w-full flex flex-col items-center justify-center min-h-[5.5rem] relative overflow-hidden">
+                                                <i id="preview-cccd-front-icon" class="fa-solid fa-id-card-clip text-slate-500 text-sm"></i>
+                                                <img id="preview-cccd-front-img" class="hidden max-h-20 max-w-full object-contain">
+                                            </div>
+                                        </div>
+                                        <!-- CCCD Back Side (Right) -->
+                                        <div class="flex flex-col items-center justify-center space-y-1">
+                                            <p class="text-[7.5px] text-slate-500 font-semibold tracking-wider uppercase text-center leading-tight">CCCD MẶT SAU:</p>
+                                            <div id="preview-cccd-back-box" class="w-full flex flex-col items-center justify-center min-h-[5.5rem] relative overflow-hidden">
+                                                <i id="preview-cccd-back-icon" class="fa-solid fa-id-card text-slate-500 text-sm"></i>
+                                                <img id="preview-cccd-back-img" class="hidden max-h-20 max-w-full object-contain">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- CCCD Text Row (Centered) -->
+                                    <div class="text-center pt-1">
+                                        <span class="text-[7.5px] text-slate-500 font-semibold uppercase tracking-wider">SỐ CCCD:</span>
+                                        <span id="preview-cccd" class="text-[9.5px] font-black text-slate-900 tracking-wider ml-1">CHƯA NHẬP</span>
                                     </div>
 
                                     <!-- Signatures -->
@@ -700,6 +763,7 @@
                         <div class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-2.5 text-xs">
                             <div class="flex justify-between"><span class="text-slate-400">Khách hàng:</span> <span id="detail-modal-name" class="text-white font-bold">...</span></div>
                             <div class="flex justify-between"><span class="text-slate-400">Số điện thoại:</span> <span id="detail-modal-phone" class="text-white font-semibold">...</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Số CCCD:</span> <span id="detail-modal-cccd" class="text-white font-semibold">...</span></div>
                             <div class="flex justify-between"><span class="text-slate-400">Loại tài sản:</span> <span id="detail-modal-asset-type" class="text-white font-semibold">...</span></div>
                             <div class="flex justify-between"><span class="text-slate-400">Chi tiết:</span> <span id="detail-modal-asset-detail" class="text-white font-semibold">...</span></div>
                             <div class="flex justify-between"><span class="text-slate-400">Ngày cầm:</span> <span id="detail-modal-date" class="text-white font-semibold">...</span></div>
@@ -730,8 +794,25 @@
                     </div>
                     <div class="md:col-span-5 space-y-2">
                         <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Hình ảnh đính kèm</span>
-                        <div id="detail-modal-image-container" class="border border-slate-800 bg-slate-950/40 rounded-xl h-28 overflow-hidden flex items-center justify-center">
-                            <!-- Image renders here -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] text-slate-400 mb-1 truncate">Ảnh tài sản</span>
+                                <div id="detail-modal-image-container" class="w-full border border-slate-800 bg-slate-950/40 rounded-xl h-20 overflow-hidden flex items-center justify-center">
+                                    <!-- Image renders here -->
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] text-slate-400 mb-1 truncate">Mặt trước</span>
+                                <div id="detail-modal-cccd-front-image-container" class="w-full border border-slate-800 bg-slate-950/40 rounded-xl h-20 overflow-hidden flex items-center justify-center">
+                                    <!-- Front CCCD renders here -->
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] text-slate-400 mb-1 truncate">Mặt sau</span>
+                                <div id="detail-modal-cccd-back-image-container" class="w-full border border-slate-800 bg-slate-950/40 rounded-xl h-20 overflow-hidden flex items-center justify-center">
+                                    <!-- Back CCCD renders here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1026,6 +1107,6 @@
 
 
     <!-- ==================== JAVASCRIPT LOGIC ==================== -->
-    <script src="app.js?v=5" defer></script>
+    <script src="app.js?v=8" defer></script>
 </body>
 </html>

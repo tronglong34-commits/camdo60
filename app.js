@@ -15,6 +15,7 @@ const dummyContracts = [
         Ma_HD: "HD0001",
         Ten_Khach_Hang: "Nguyễn Văn A",
         So_Dien_Thoai: "0987654321",
+        So_CCCD: "001090012345",
         Loai_Tai_San: "Honda",
         Chi_Tiet_Tai_San: "29X1-12345",
         So_Tien_Cam: 10000000,
@@ -27,6 +28,7 @@ const dummyContracts = [
         Ma_HD: "HD0002",
         Ten_Khach_Hang: "Trần Thị B",
         So_Dien_Thoai: "0961234567",
+        So_CCCD: "002090054321",
         Loai_Tai_San: "Điện thoại",
         Chi_Tiet_Tai_San: "iPhone 14 Pro Max 256GB",
         So_Tien_Cam: 15000000,
@@ -79,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTabUI(initialTab);
     
     // 3. Form input change listeners for Live Preview
-    const formFields = ['customer-name', 'customer-phone', 'asset-type', 'asset-detail', 'loan-amount-input', 'contract-date'];
+    const formFields = ['customer-name', 'customer-phone', 'customer-cccd', 'asset-type', 'asset-detail', 'loan-amount-input', 'contract-date'];
     formFields.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -760,6 +762,7 @@ function handleRePawn(hdId) {
     // Prefill form values
     document.getElementById('customer-name').value = contract.Ten_Khach_Hang;
     document.getElementById('customer-phone').value = contract.So_Dien_Thoai;
+    document.getElementById('customer-cccd').value = contract.So_CCCD || "";
     document.getElementById('asset-type').value = contract.Loai_Tai_San;
     
     // Run updateAssetPlaceholders to ensure correct placeholder is set
@@ -780,7 +783,49 @@ function handleRePawn(hdId) {
         previewImg.src = formatImageUrl(contract.Hinh_Anh);
         previewContainer.classList.remove('hidden');
     } else {
-        clearUploadedImage();
+        clearUploadedImage(null, 'asset');
+    }
+
+    if (contract.Hinh_CCCD_Truoc) {
+        uploadedCccdFrontBase64 = contract.Hinh_CCCD_Truoc;
+        const placeholder = document.getElementById('cccd-front-upload-placeholder');
+        if (placeholder) placeholder.classList.add('hidden');
+        
+        const previewContainer = document.getElementById('cccd-front-image-upload-preview-container');
+        const previewImg = document.getElementById('cccd-front-image-upload-preview');
+        if (previewImg) previewImg.src = formatImageUrl(contract.Hinh_CCCD_Truoc);
+        if (previewContainer) previewContainer.classList.remove('hidden');
+        
+        const receiptCccdImg = document.getElementById('preview-cccd-front-img');
+        const receiptCccdIcon = document.getElementById('preview-cccd-front-icon');
+        if (receiptCccdImg) {
+            receiptCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Truoc);
+            receiptCccdImg.classList.remove('hidden');
+        }
+        if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
+    } else {
+        clearUploadedImage(null, 'cccd-front');
+    }
+
+    if (contract.Hinh_CCCD_Sau) {
+        uploadedCccdBackBase64 = contract.Hinh_CCCD_Sau;
+        const placeholder = document.getElementById('cccd-back-upload-placeholder');
+        if (placeholder) placeholder.classList.add('hidden');
+        
+        const previewContainer = document.getElementById('cccd-back-image-upload-preview-container');
+        const previewImg = document.getElementById('cccd-back-image-upload-preview');
+        if (previewImg) previewImg.src = formatImageUrl(contract.Hinh_CCCD_Sau);
+        if (previewContainer) previewContainer.classList.remove('hidden');
+        
+        const receiptCccdImg = document.getElementById('preview-cccd-back-img');
+        const receiptCccdIcon = document.getElementById('preview-cccd-back-icon');
+        if (receiptCccdImg) {
+            receiptCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Sau);
+            receiptCccdImg.classList.remove('hidden');
+        }
+        if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
+    } else {
+        clearUploadedImage(null, 'cccd-back');
     }
     
     // Update live preview layout
@@ -968,6 +1013,7 @@ function renderStatistics() {
 function updateReceiptPreview() {
     const name = document.getElementById('customer-name').value.trim() || "Chưa nhập";
     const phone = document.getElementById('customer-phone').value.trim() || "Chưa nhập";
+    const cccd = document.getElementById('customer-cccd').value.trim() || "Chưa nhập";
     const assetType = document.getElementById('asset-type').value;
     const assetDetail = document.getElementById('asset-detail').value.trim() || "Chưa nhập";
     const rawAmount = document.getElementById('loan-amount-input').value.replace(/,/g, '');
@@ -985,6 +1031,7 @@ function updateReceiptPreview() {
     document.getElementById('preview-id').innerText = nextId;
     document.getElementById('preview-name').innerText = name;
     document.getElementById('preview-phone').innerText = phone;
+    document.getElementById('preview-cccd').innerText = cccd.toUpperCase();
     document.getElementById('preview-asset-type').innerText = assetType;
     document.getElementById('preview-asset-detail').innerText = assetDetail;
     document.getElementById('preview-date').innerText = formatDateToDMY(dateVal);
@@ -1034,8 +1081,10 @@ function updateAssetPlaceholders() {
 
 // ==================== FILE / IMAGE HANDLING ====================
 let uploadedImageBase64 = "";
+let uploadedCccdFrontBase64 = "";
+let uploadedCccdBackBase64 = "";
 
-function previewUploadImage(input) {
+function previewUploadImage(input, type = 'asset') {
     const file = input.files[0];
     if (!file) return;
     
@@ -1069,27 +1118,117 @@ function previewUploadImage(input) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            uploadedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
             
-            document.getElementById('upload-placeholder').classList.add('hidden');
-            const previewContainer = document.getElementById('image-upload-preview-container');
-            const previewImg = document.getElementById('image-upload-preview');
-            
-            previewImg.src = uploadedImageBase64;
-            previewContainer.classList.remove('hidden');
-            showToast("Hình ảnh đã tải lên và được tối ưu dung lượng!", "info");
+            if (type === 'cccd-front') {
+                uploadedCccdFrontBase64 = compressedBase64;
+                
+                const placeholder = document.getElementById('cccd-front-upload-placeholder');
+                if (placeholder) placeholder.classList.add('hidden');
+                
+                const previewContainer = document.getElementById('cccd-front-image-upload-preview-container');
+                const previewImg = document.getElementById('cccd-front-image-upload-preview');
+                if (previewImg) previewImg.src = uploadedCccdFrontBase64;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+                
+                // Update live preview
+                const receiptCccdImg = document.getElementById('preview-cccd-front-img');
+                const receiptCccdIcon = document.getElementById('preview-cccd-front-icon');
+                if (receiptCccdImg) {
+                    receiptCccdImg.src = uploadedCccdFrontBase64;
+                    receiptCccdImg.classList.remove('hidden');
+                }
+                if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
+                
+                showToast("Ảnh CCCD mặt trước tải lên thành công!", "info");
+            } else if (type === 'cccd-back') {
+                uploadedCccdBackBase64 = compressedBase64;
+                
+                const placeholder = document.getElementById('cccd-back-upload-placeholder');
+                if (placeholder) placeholder.classList.add('hidden');
+                
+                const previewContainer = document.getElementById('cccd-back-image-upload-preview-container');
+                const previewImg = document.getElementById('cccd-back-image-upload-preview');
+                if (previewImg) previewImg.src = uploadedCccdBackBase64;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+                
+                // Update live preview
+                const receiptCccdImg = document.getElementById('preview-cccd-back-img');
+                const receiptCccdIcon = document.getElementById('preview-cccd-back-icon');
+                if (receiptCccdImg) {
+                    receiptCccdImg.src = uploadedCccdBackBase64;
+                    receiptCccdImg.classList.remove('hidden');
+                }
+                if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
+                
+                showToast("Ảnh CCCD mặt sau tải lên thành công!", "info");
+            } else {
+                uploadedImageBase64 = compressedBase64;
+                
+                const placeholder = document.getElementById('upload-placeholder');
+                if (placeholder) placeholder.classList.add('hidden');
+                
+                const previewContainer = document.getElementById('image-upload-preview-container');
+                const previewImg = document.getElementById('image-upload-preview');
+                if (previewImg) previewImg.src = uploadedImageBase64;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+                
+                showToast("Hình ảnh tài sản đã tải lên thành công!", "info");
+            }
         };
     };
     reader.readAsDataURL(file);
 }
 
-function clearUploadedImage(e) {
+function clearUploadedImage(e, type = 'asset') {
     if (e) e.stopPropagation();
-    document.getElementById('asset-image').value = "";
-    uploadedImageBase64 = "";
-    document.getElementById('image-upload-preview').src = "";
-    document.getElementById('image-upload-preview-container').classList.add('hidden');
-    document.getElementById('upload-placeholder').classList.remove('hidden');
+    
+    if (type === 'cccd-front') {
+        document.getElementById('cccd-front-image').value = "";
+        uploadedCccdFrontBase64 = "";
+        const previewImg = document.getElementById('cccd-front-image-upload-preview');
+        if (previewImg) previewImg.src = "";
+        const previewContainer = document.getElementById('cccd-front-image-upload-preview-container');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const placeholder = document.getElementById('cccd-front-upload-placeholder');
+        if (placeholder) placeholder.classList.remove('hidden');
+        
+        // Update live preview
+        const receiptCccdImg = document.getElementById('preview-cccd-front-img');
+        const receiptCccdIcon = document.getElementById('preview-cccd-front-icon');
+        if (receiptCccdImg) {
+            receiptCccdImg.src = "";
+            receiptCccdImg.classList.add('hidden');
+        }
+        if (receiptCccdIcon) receiptCccdIcon.classList.remove('hidden');
+    } else if (type === 'cccd-back') {
+        document.getElementById('cccd-back-image').value = "";
+        uploadedCccdBackBase64 = "";
+        const previewImg = document.getElementById('cccd-back-image-upload-preview');
+        if (previewImg) previewImg.src = "";
+        const previewContainer = document.getElementById('cccd-back-image-upload-preview-container');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const placeholder = document.getElementById('cccd-back-upload-placeholder');
+        if (placeholder) placeholder.classList.remove('hidden');
+        
+        // Update live preview
+        const receiptCccdImg = document.getElementById('preview-cccd-back-img');
+        const receiptCccdIcon = document.getElementById('preview-cccd-back-icon');
+        if (receiptCccdImg) {
+            receiptCccdImg.src = "";
+            receiptCccdImg.classList.add('hidden');
+        }
+        if (receiptCccdIcon) receiptCccdIcon.classList.remove('hidden');
+    } else {
+        document.getElementById('asset-image').value = "";
+        uploadedImageBase64 = "";
+        const previewImg = document.getElementById('image-upload-preview');
+        if (previewImg) previewImg.src = "";
+        const previewContainer = document.getElementById('image-upload-preview-container');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const placeholder = document.getElementById('upload-placeholder');
+        if (placeholder) placeholder.classList.remove('hidden');
+    }
 }
 
 // ==================== TRANSACTION HANDLERS ====================
@@ -1107,6 +1246,7 @@ async function handleCreateContract(e) {
     try {
         const name = document.getElementById('customer-name').value.trim();
         const phone = document.getElementById('customer-phone').value.trim();
+        const cccd = document.getElementById('customer-cccd').value.trim();
         const assetType = document.getElementById('asset-type').value;
         const assetDetail = document.getElementById('asset-detail').value.trim();
         const rawAmount = document.getElementById('loan-amount-input').value.replace(/,/g, '');
@@ -1136,13 +1276,18 @@ async function handleCreateContract(e) {
             action: "createContract",
             Ten_Khach_Hang: name,
             So_Dien_Thoai: phone,
+            So_CCCD: cccd,
             Loai_Tai_San: assetType,
             Chi_Tiet_Tai_San: assetDetail,
             So_Tien_Cam: amountVal,
             Ngay_Cam: dateVal,
             Ghi_Chu: notes,
             image_data: uploadedImageBase64,
-            image_name: `pawn_${newHdId}.jpg`
+            image_name: `pawn_${newHdId}.jpg`,
+            cccd_front_image_data: uploadedCccdFrontBase64,
+            cccd_front_image_name: `cccd_front_${newHdId}.jpg`,
+            cccd_back_image_data: uploadedCccdBackBase64,
+            cccd_back_image_name: `cccd_back_${newHdId}.jpg`
         };
         
         const res = await postToAPI(payload);
@@ -1152,13 +1297,16 @@ async function handleCreateContract(e) {
                 Ma_HD: newHdId,
                 Ten_Khach_Hang: name,
                 So_Dien_Thoai: phone,
+                So_CCCD: cccd,
                 Loai_Tai_San: assetType,
                 Chi_Tiet_Tai_San: assetDetail,
                 So_Tien_Cam: amountVal,
                 Ngay_Cam: dateVal,
                 Trang_Thai: "Active",
                 Ghi_Chu: notes,
-                Hinh_Anh: uploadedImageBase64
+                Hinh_Anh: uploadedImageBase64,
+                Hinh_CCCD_Truoc: uploadedCccdFrontBase64,
+                Hinh_CCCD_Sau: uploadedCccdBackBase64
             };
             
             state.contracts.push(newContract);
@@ -1174,7 +1322,9 @@ async function handleCreateContract(e) {
             const formEl = document.getElementById('new-contract-form');
             if (formEl) formEl.reset();
             document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
-            clearUploadedImage();
+            clearUploadedImage(null, 'asset');
+            clearUploadedImage(null, 'cccd-front');
+            clearUploadedImage(null, 'cccd-back');
             updateReceiptPreview();
             
             showToast("Tạo hợp đồng thành công!", "success");
@@ -1477,6 +1627,7 @@ function openContractDetailsModal(hdId) {
     document.getElementById('detail-modal-hd-id').innerText = contract.Ma_HD;
     document.getElementById('detail-modal-name').innerText = contract.Ten_Khach_Hang;
     document.getElementById('detail-modal-phone').innerText = contract.So_Dien_Thoai;
+    document.getElementById('detail-modal-cccd').innerText = contract.So_CCCD || 'Chưa có';
     document.getElementById('detail-modal-asset-type').innerText = contract.Loai_Tai_San;
     document.getElementById('detail-modal-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
     document.getElementById('detail-modal-date').innerText = contract.Ngay_Cam;
@@ -1533,6 +1684,44 @@ function openContractDetailsModal(hdId) {
         }
     } else {
         imgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh đính kèm</span>`;
+    }
+    
+    const cccdFrontImgContainer = document.getElementById('detail-modal-cccd-front-image-container');
+    if (cccdFrontImgContainer) {
+        if (contract.Hinh_CCCD_Truoc) {
+            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Truoc);
+            if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
+                cccdFrontImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
+            } else {
+                cccdFrontImgContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_CCCD_Truoc}">
+                        <i class="fa-solid fa-image-slash text-lg mb-1 text-slate-600"></i>
+                        <span class="text-[10px] font-semibold text-slate-500">Ảnh không khả dụng</span>
+                    </div>
+                `;
+            }
+        } else {
+            cccdFrontImgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh mặt trước</span>`;
+        }
+    }
+
+    const cccdBackImgContainer = document.getElementById('detail-modal-cccd-back-image-container');
+    if (cccdBackImgContainer) {
+        if (contract.Hinh_CCCD_Sau) {
+            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Sau);
+            if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
+                cccdBackImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
+            } else {
+                cccdBackImgContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_CCCD_Sau}">
+                        <i class="fa-solid fa-image-slash text-lg mb-1 text-slate-600"></i>
+                        <span class="text-[10px] font-semibold text-slate-500">Ảnh không khả dụng</span>
+                    </div>
+                `;
+            }
+        } else {
+            cccdBackImgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh mặt sau</span>`;
+        }
     }
     // Load transaction history for this contract
     const historyBody = document.getElementById('detail-modal-history-body');
@@ -1623,6 +1812,40 @@ async function printContractReceipt(contractId) {
         document.getElementById('preview-id').innerText = contract.Ma_HD;
         document.getElementById('preview-name').innerText = contract.Ten_Khach_Hang;
         document.getElementById('preview-phone').innerText = contract.So_Dien_Thoai;
+        document.getElementById('preview-cccd').innerText = contract.So_CCCD || 'CHƯA NHẬP';
+        
+        const frontCccdImg = document.getElementById('preview-cccd-front-img');
+        const frontCccdIcon = document.getElementById('preview-cccd-front-icon');
+        if (contract.Hinh_CCCD_Truoc) {
+            if (frontCccdImg) {
+                frontCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Truoc);
+                frontCccdImg.classList.remove('hidden');
+            }
+            if (frontCccdIcon) frontCccdIcon.classList.add('hidden');
+        } else {
+            if (frontCccdImg) {
+                frontCccdImg.src = "";
+                frontCccdImg.classList.add('hidden');
+            }
+            if (frontCccdIcon) frontCccdIcon.classList.remove('hidden');
+        }
+
+        const backCccdImg = document.getElementById('preview-cccd-back-img');
+        const backCccdIcon = document.getElementById('preview-cccd-back-icon');
+        if (contract.Hinh_CCCD_Sau) {
+            if (backCccdImg) {
+                backCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Sau);
+                backCccdImg.classList.remove('hidden');
+            }
+            if (backCccdIcon) backCccdIcon.classList.add('hidden');
+        } else {
+            if (backCccdImg) {
+                backCccdImg.src = "";
+                backCccdImg.classList.add('hidden');
+            }
+            if (backCccdIcon) backCccdIcon.classList.remove('hidden');
+        }
+
         document.getElementById('preview-asset-type').innerText = contract.Loai_Tai_San;
         document.getElementById('preview-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
         document.getElementById('preview-date').innerText = formatDateToDMY(contract.Ngay_Cam);
@@ -1891,6 +2114,25 @@ function exportReceiptToPDF(contractId) {
     const previewInterestNote = document.getElementById('preview-interest-note')?.innerText || '';
     const previewSignatureName = document.getElementById('preview-signature-name')?.innerText || '.................';
     const previewTermsNote = document.getElementById('preview-terms-note')?.innerText || 'Biên nhận này có giá trị 01 tháng. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.';
+    const previewCccd = document.getElementById('preview-cccd')?.innerText || 'CHƯA NHẬP';
+
+    const frontCccdImgEl = document.getElementById('preview-cccd-front-img');
+    const hasFrontCccdImg = frontCccdImgEl && !frontCccdImgEl.classList.contains('hidden') && frontCccdImgEl.src;
+    let frontCccdImgHtml = '';
+    if (hasFrontCccdImg) {
+        frontCccdImgHtml = `<img src="${frontCccdImgEl.src}" style="max-height:72px;max-width:100%;border-radius:4px;object-fit:contain;display:block;margin:0 auto;" />`;
+    } else {
+        frontCccdImgHtml = `<div style="text-align:center;font-size:24px;color:#aaa;line-height:72px;">💳</div>`;
+    }
+
+    const backCccdImgEl = document.getElementById('preview-cccd-back-img');
+    const hasBackCccdImg = backCccdImgEl && !backCccdImgEl.classList.contains('hidden') && backCccdImgEl.src;
+    let backCccdImgHtml = '';
+    if (hasBackCccdImg) {
+        backCccdImgHtml = `<img src="${backCccdImgEl.src}" style="max-height:72px;max-width:100%;border-radius:4px;object-fit:contain;display:block;margin:0 auto;" />`;
+    } else {
+        backCccdImgHtml = `<div style="text-align:center;font-size:24px;color:#aaa;line-height:72px;">💳</div>`;
+    }
 
     const qrBase64 = 'data:image/jpeg;base64,' + (window._qrBase64Cache || '');
     
@@ -1967,9 +2209,24 @@ function exportReceiptToPDF(contractId) {
             <div>Nếu đánh mất Giấy mà Giấy đó đã có người đến chuộc đồ, đồ không còn chúng tôi không chịu trách nhiệm.</div>
         </div>
         
-        <div style="text-align:center;margin:6px 0;padding-top:6px;border-top:1px dashed #bbb;">
-            <div style="font-size:8.5px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px;">Quét mã Zalo liên hệ đóng lãi / tất toán:</div>
-            <img src="${qrBase64}" style="width:75px;height:75px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:inline-block;" />
+        <table style="width:100%;border-collapse:collapse;margin:6px 0;padding-top:6px;border-top:1.5px dashed #000;">
+            <tr>
+                <td style="width:50%;text-align:center;vertical-align:middle;padding-right:10px;">
+                    <div style="font-size:8px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px;line-height:1.2;">CCCD MẶT TRƯỚC:</div>
+                    <div style="min-height:76px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
+                        ${frontCccdImgHtml}
+                    </div>
+                </td>
+                <td style="width:50%;text-align:center;vertical-align:middle;border-left:1px dashed #bbb;padding-left:10px;">
+                    <div style="font-size:8px;color:#555;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px;line-height:1.2;">CCCD MẶT SAU:</div>
+                    <div style="min-height:76px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
+                        ${backCccdImgHtml}
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <div style="text-align:center;font-size:10px;font-weight:900;letter-spacing:0.5px;color:#000;margin-top:4px;">
+            SỐ CCCD: ${previewCccd}
         </div>
         
         <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-size:10px;font-weight:700;color:#000;">
