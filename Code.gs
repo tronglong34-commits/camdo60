@@ -327,19 +327,68 @@ function doPost(e) {
         return createJsonResponse({ success: false, error: "Không tìm thấy hợp đồng " + maHd });
       }
       
-      // Cập nhật Số tiền cầm (Cột F = cột 6)
+      // Batch write F (6) to I (9) in 1 call instead of multiple getRange/setValue calls
+      var range = sheetCamDo.getRange(foundRow, 6, 1, 4); // Columns 6 to 9 (F, G, H, I)
+      var values = range.getValues()[0];
       if (params.So_Tien_Cam !== undefined) {
-        sheetCamDo.getRange(foundRow, 6).setValue(parseFloat(params.So_Tien_Cam) || 0);
+        values[0] = parseFloat(params.So_Tien_Cam) || 0;
       }
-      
-      // Cập nhật Ghi chú (Cột I = cột 9)
       if (params.Ghi_Chu !== undefined) {
-        sheetCamDo.getRange(foundRow, 9).setValue(params.Ghi_Chu || "");
+        values[3] = params.Ghi_Chu || "";
       }
+      range.setValues([values]);
       
       return createJsonResponse({
         success: true,
         message: "Hợp đồng " + maHd + " đã được cập nhật thành công."
+      });
+      
+    } else if (action === "updateImages") {
+      var sheetCamDo = ss.getSheetByName("Danh_Sach_Cam_Do");
+      if (!sheetCamDo) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy Tab Danh_Sach_Cam_Do" });
+      }
+      
+      var dataCamDo = sheetCamDo.getDataRange().getValues();
+      var maHd = params.Ma_HD;
+      var foundRow = -1;
+      
+      for (var i = 1; i < dataCamDo.length; i++) {
+        if (dataCamDo[i][0].toString().trim() === maHd.toString().trim()) {
+          foundRow = i + 1; // 1-indexed and header row offset
+          break;
+        }
+      }
+      
+      if (foundRow === -1) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy hợp đồng " + maHd });
+      }
+      
+      // Save images to Google Drive
+      var imageUrl = params.image_data ? saveBase64ToDrive(params.image_data, params.image_name) : "";
+      var cccdFrontImageUrl = params.cccd_front_image_data ? saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name) : "";
+      var cccdBackImageUrl = params.cccd_back_image_data ? saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name) : "";
+      
+      // Optimize: Batch write columns J, K, L, M, N (columns 10 to 14)
+      // J (10): Hinh_Anh
+      // K (11): PDF_Url
+      // L (12): So_CCCD
+      // M (13): Hinh_CCCD_Truoc
+      // N (14): Hinh_CCCD_Sau
+      var range = sheetCamDo.getRange(foundRow, 10, 1, 5); // Columns 10 to 14
+      var values = range.getValues()[0];
+      if (imageUrl) values[0] = imageUrl;
+      if (cccdFrontImageUrl) values[3] = cccdFrontImageUrl;
+      if (cccdBackImageUrl) values[4] = cccdBackImageUrl;
+      range.setValues([values]);
+      
+      return createJsonResponse({
+        success: true,
+        data: {
+          Hinh_Anh: imageUrl || undefined,
+          Hinh_CCCD_Truoc: cccdFrontImageUrl || undefined,
+          Hinh_CCCD_Sau: cccdBackImageUrl || undefined
+        }
       });
       
     } else if (action === "uploadPDF") {

@@ -302,9 +302,9 @@ function updateDatabaseStatus() {
 }
 
 // ==================== DATA SYNCING ====================
-async function syncData() {
+async function syncData(isSilent = false) {
     updateDatabaseStatus();
-    showLoading(true, "Đang tải dữ liệu...");
+    if (!isSilent) showLoading(true, "Đang tải dữ liệu...");
     
     if (isDemoMode) {
         let localContracts = localStorage.getItem('pawnshop_contracts');
@@ -324,7 +324,7 @@ async function syncData() {
             localStorage.setItem('pawnshop_history', JSON.stringify(dummyHistory));
         }
         
-        showLoading(false);
+        if (!isSilent) showLoading(false);
         renderAll();
     } else {
         try {
@@ -343,20 +343,20 @@ async function syncData() {
                     console.log(`Mã HĐ: ${c.Ma_HD} | Khách: ${c.Ten_Khach_Hang} | Hinh_Anh:`, c.Hinh_Anh ? c.Hinh_Anh.substring(0, 100) + (c.Hinh_Anh.length > 100 ? "..." : "") : "Trống");
                 });
                 
-                showToast("Đồng bộ thành công!", "success");
+                if (!isSilent) showToast("Đồng bộ thành công!", "success");
             } else {
                 throw new Error(resData.error || "Lỗi không xác định");
             }
         } catch (err) {
             console.error("Fetch API error:", err);
-            showToast("Lỗi kết nối API Google Sheets. Đang dùng dữ liệu cache offline.", "error");
+            if (!isSilent) showToast("Lỗi kết nối API Google Sheets. Đang dùng dữ liệu cache offline.", "error");
             
             let localContracts = localStorage.getItem('pawnshop_contracts') || "[]";
             let localHistory = localStorage.getItem('pawnshop_history') || "[]";
             state.contracts = JSON.parse(localContracts);
             state.history = JSON.parse(localHistory);
         } finally {
-            showLoading(false);
+            if (!isSilent) showLoading(false);
             renderAll();
         }
     }
@@ -1101,8 +1101,8 @@ function previewUploadImage(input, type = 'asset') {
         img.src = rawBase64;
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 600;
-            const MAX_HEIGHT = 600;
+            const MAX_WIDTH = 500;
+            const MAX_HEIGHT = 500;
             let width = img.width;
             let height = img.height;
             
@@ -1123,7 +1123,7 @@ function previewUploadImage(input, type = 'asset') {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
             
             if (type === 'cccd-front') {
                 uploadedCccdFrontBase64 = compressedBase64;
@@ -1286,13 +1286,7 @@ async function handleCreateContract(e) {
             Chi_Tiet_Tai_San: assetDetail,
             So_Tien_Cam: amountVal,
             Ngay_Cam: dateVal,
-            Ghi_Chu: notes,
-            image_data: uploadedImageBase64,
-            image_name: `pawn_${newHdId}.jpg`,
-            cccd_front_image_data: uploadedCccdFrontBase64,
-            cccd_front_image_name: `cccd_front_${newHdId}.jpg`,
-            cccd_back_image_data: uploadedCccdBackBase64,
-            cccd_back_image_name: `cccd_back_${newHdId}.jpg`
+            Ghi_Chu: notes
         };
         
         const res = await postToAPI(payload);
@@ -1327,6 +1321,12 @@ async function handleCreateContract(e) {
             const formEl = document.getElementById('new-contract-form');
             if (formEl) formEl.reset();
             document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
+            
+            // Save base64 variables for async upload before cleaning preview
+            const imgBase64 = uploadedImageBase64;
+            const cccdFrontBase64 = uploadedCccdFrontBase64;
+            const cccdBackBase64 = uploadedCccdBackBase64;
+            
             clearUploadedImage(null, 'asset');
             clearUploadedImage(null, 'cccd-front');
             clearUploadedImage(null, 'cccd-back');
@@ -1334,6 +1334,12 @@ async function handleCreateContract(e) {
             
             showToast("Tạo hợp đồng thành công!", "success");
             switchTab('active-contracts');
+            
+            // Background uploading
+            if (imgBase64 || cccdFrontBase64 || cccdBackBase64) {
+                showToast("Đang tải hình ảnh lên hệ thống chạy ngầm...", "info");
+                uploadContractImagesBackground(newHdId, imgBase64, cccdFrontBase64, cccdBackBase64);
+            }
         } else {
             showToast("Gặp lỗi khi lưu hợp đồng: " + (res.error || "Lỗi API"), "error");
         }
@@ -1347,8 +1353,36 @@ async function handleCreateContract(e) {
         }
         isSubmitting = false;
         showLoading(false);
-        syncData();
+        // Do not sync synchronously if uploading images in background
+        if (!uploadedImageBase64 && !uploadedCccdFrontBase64 && !uploadedCccdBackBase64) {
+            syncData();
+        }
     }
+}
+
+function uploadContractImagesBackground(hdId, imageBase64, cccdFrontBase64, cccdBackBase64) {
+    const payload = {
+        action: "updateImages",
+        Ma_HD: hdId,
+        image_data: imageBase64 || "",
+        image_name: `pawn_${hdId}.jpg`,
+        cccd_front_image_data: cccdFrontBase64 || "",
+        cccd_front_image_name: `cccd_front_${hdId}.jpg`,
+        cccd_back_image_data: cccdBackBase64 || "",
+        cccd_back_image_name: `cccd_back_${hdId}.jpg`
+    };
+    
+    postToAPI(payload).then(res => {
+        if (res && res.success) {
+            console.log(`Đã tải hình ảnh cho HĐ ${hdId} chạy ngầm thành công.`);
+            showToast(`Đã đồng bộ hình ảnh hợp đồng ${hdId}!`, "success");
+            syncData(true); // silent sync
+        } else {
+            console.error(`Lỗi tải ảnh ngầm HĐ ${hdId}:`, res ? res.error : "Không phản hồi");
+        }
+    }).catch(err => {
+        console.error(`Lỗi kết nối tải ảnh ngầm HĐ ${hdId}:`, err);
+    });
 }
 
 function openPayInterestModal(hdId, customerName, suggestedInterest) {
