@@ -403,27 +403,8 @@ function doPost(e) {
           var bytes = Utilities.base64Decode(base64Data);
           var blob = Utilities.newBlob(bytes, contentType, params.pdf_name);
           
-          var pdfParentName = "Quản lý Cầm Đồ 60";
-          var pdfChildName = "hóa đơn";
-          var pdfFolder = null;
-          
-          var parentFolders = DriveApp.getFoldersByName(pdfParentName);
-          if (parentFolders.hasNext()) {
-            var parentFolder = parentFolders.next();
-            var childFolders = parentFolder.getFoldersByName(pdfChildName);
-            if (childFolders.hasNext()) {
-              pdfFolder = childFolders.next();
-            } else {
-              pdfFolder = parentFolder.createFolder(pdfChildName);
-            }
-          } else {
-            var folders = DriveApp.getFoldersByName(pdfChildName);
-            if (folders.hasNext()) {
-              pdfFolder = folders.next();
-            } else {
-              pdfFolder = DriveApp.createFolder(pdfChildName);
-            }
-          }
+          var parentFolder = getOrCreateFolder("Quản lý Cầm Đồ 60", "PARENT_FOLDER_ID");
+          var pdfFolder = getOrCreateFolder("hóa đơn", "PDF_FOLDER_ID", parentFolder.getId());
           
           // Xóa file cũ cùng tên nếu có để tránh trùng lặp
           var existingFiles = pdfFolder.getFilesByName(params.pdf_name);
@@ -482,27 +463,8 @@ function saveBase64ToDrive(base64Data, fileName) {
     var bytes = Utilities.base64Decode(base64DataClean);
     var blob = Utilities.newBlob(bytes, contentType, fileName);
     
-    var parentFolderName = "Quản lý Cầm Đồ 60";
-    var childFolderName = "lưu hình ảnh";
-    var targetFolder = null;
-    
-    var parentFolders = DriveApp.getFoldersByName(parentFolderName);
-    if (parentFolders.hasNext()) {
-      var parentFolder = parentFolders.next();
-      var childFolders = parentFolder.getFoldersByName(childFolderName);
-      if (childFolders.hasNext()) {
-        targetFolder = childFolders.next();
-      } else {
-        targetFolder = parentFolder.createFolder(childFolderName);
-      }
-    } else {
-      var folders = DriveApp.getFoldersByName(childFolderName);
-      if (folders.hasNext()) {
-        targetFolder = folders.next();
-      } else {
-        targetFolder = DriveApp.createFolder(childFolderName);
-      }
-    }
+    var parentFolder = getOrCreateFolder("Quản lý Cầm Đồ 60", "PARENT_FOLDER_ID");
+    var targetFolder = getOrCreateFolder("lưu hình ảnh", "IMAGE_FOLDER_ID", parentFolder.getId());
     
     var file = targetFolder.createFile(blob);
     try {
@@ -522,4 +484,30 @@ function testDrivePermission() {
   // Trong giao diện Apps Script, bạn chọn hàm này ở ô chọn trên thanh công cụ và bấm nút "Run" (Chạy).
   var root = DriveApp.getRootFolder();
   Logger.log("Đã kết nối Google Drive thành công! Thư mục gốc: " + root.getName());
+}
+
+// HÀM TIỆN ÍCH: Lấy hoặc tạo thư mục trên Drive hỗ trợ Cache ID để tối ưu tốc độ
+function getOrCreateFolder(folderName, propertyKey, parentFolderId) {
+  var props = PropertiesService.getScriptProperties();
+  var folderId = props.getProperty(propertyKey);
+  
+  if (folderId) {
+    try {
+      return DriveApp.getFolderById(folderId);
+    } catch (e) {
+      // Bỏ qua lỗi và tiếp tục tìm lại nếu thư mục bị xóa
+    }
+  }
+  
+  var folder;
+  var parent = parentFolderId ? DriveApp.getFolderById(parentFolderId) : DriveApp;
+  var folders = parent.getFoldersByName(folderName);
+  if (folders.hasNext()) {
+    folder = folders.next();
+  } else {
+    folder = parent.createFolder(folderName);
+  }
+  
+  props.setProperty(propertyKey, folder.getId());
+  return folder;
 }
