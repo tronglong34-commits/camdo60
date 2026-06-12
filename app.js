@@ -656,11 +656,12 @@ function renderActiveContracts() {
 
         let imgHtml = "";
         if (c.Hinh_Anh) {
-            const displayUrl = formatImageUrl(c.Hinh_Anh);
-            if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
+            const thumbUrl = formatImageUrl(c.Hinh_Anh, 150);
+            const zoomUrl = formatImageUrl(c.Hinh_Anh, 1200);
+            if (thumbUrl.startsWith("http") || thumbUrl.startsWith("data:")) {
                 imgHtml = `
-                    <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-slate-950/40 group cursor-zoom-in transition-all duration-300 hover:border-white/20 shrink-0" onclick="event.stopPropagation(); openLightbox('${displayUrl}')">
-                        <img src="${displayUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="handleImageLoadError(this)">
+                    <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-slate-950/40 group cursor-zoom-in transition-all duration-300 hover:border-white/20 shrink-0" onclick="event.stopPropagation(); openLightbox('${zoomUrl}')">
+                        <img src="${thumbUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="handleImageLoadError(this)">
                         <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                             <i class="fa-solid fa-magnifying-glass text-white text-xs"></i>
                         </div>
@@ -1739,9 +1740,10 @@ function openContractDetailsModal(hdId) {
     
     const imgContainer = document.getElementById('detail-modal-image-container');
     if (contract.Hinh_Anh) {
-        const displayUrl = formatImageUrl(contract.Hinh_Anh);
+        const displayUrl = formatImageUrl(contract.Hinh_Anh, 400);
+        const zoomUrl = formatImageUrl(contract.Hinh_Anh, 1200);
         if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
-            imgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-4 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-2xl mb-2 text-slate-600\'></i><span class=\'text-xs font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
+            imgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${zoomUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-4 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-2xl mb-2 text-slate-600\'></i><span class=\'text-xs font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
         } else {
             imgContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center text-slate-500 p-4 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_Anh}">
@@ -1757,9 +1759,10 @@ function openContractDetailsModal(hdId) {
     const cccdFrontImgContainer = document.getElementById('detail-modal-cccd-front-image-container');
     if (cccdFrontImgContainer) {
         if (contract.Hinh_CCCD_Truoc) {
-            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Truoc);
+            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Truoc, 400);
+            const zoomUrl = formatImageUrl(contract.Hinh_CCCD_Truoc, 1200);
             if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
-                cccdFrontImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
+                cccdFrontImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${zoomUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
             } else {
                 cccdFrontImgContainer.innerHTML = `
                     <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_CCCD_Truoc}">
@@ -1776,9 +1779,10 @@ function openContractDetailsModal(hdId) {
     const cccdBackImgContainer = document.getElementById('detail-modal-cccd-back-image-container');
     if (cccdBackImgContainer) {
         if (contract.Hinh_CCCD_Sau) {
-            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Sau);
+            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Sau, 400);
+            const zoomUrl = formatImageUrl(contract.Hinh_CCCD_Sau, 1200);
             if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
-                cccdBackImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${displayUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
+                cccdBackImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${zoomUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
             } else {
                 cccdBackImgContainer.innerHTML = `
                     <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_CCCD_Sau}">
@@ -1898,7 +1902,7 @@ async function printContractReceipt(contractId) {
         const frontCccdIcon = document.getElementById('preview-cccd-front-icon');
         if (contract.Hinh_CCCD_Truoc) {
             if (frontCccdImg) {
-                frontCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Truoc);
+                frontCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Truoc, 600);
                 frontCccdImg.classList.remove('hidden');
             }
             if (frontCccdIcon) frontCccdIcon.classList.add('hidden');
@@ -1914,7 +1918,7 @@ async function printContractReceipt(contractId) {
         const backCccdIcon = document.getElementById('preview-cccd-back-icon');
         if (contract.Hinh_CCCD_Sau) {
             if (backCccdImg) {
-                backCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Sau);
+                backCccdImg.src = formatImageUrl(contract.Hinh_CCCD_Sau, 600);
                 backCccdImg.classList.remove('hidden');
             }
             if (backCccdIcon) backCccdIcon.classList.add('hidden');
@@ -2069,7 +2073,7 @@ function openLightbox(src) {
     }
 }
 
-function formatImageUrl(url) {
+function formatImageUrl(url, size) {
     if (!url) return "";
     if (url.startsWith("data:")) return url;
     if (url.includes("drive.google.com")) {
@@ -2077,7 +2081,7 @@ function formatImageUrl(url) {
         const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
         if (match && match[1]) {
             id = match[1];
-            return `https://lh3.googleusercontent.com/d/${id}`;
+            return `https://lh3.googleusercontent.com/d/${id}${size ? '=s' + size : ''}`;
         }
     }
     return url;
