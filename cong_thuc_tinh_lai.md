@@ -11,39 +11,57 @@ Tài liệu này ghi lại chi tiết công thức và các khung lãi suất đ
 ---
 
 ## 2. Công Thức Tính Lãi Cho Xe Máy (Loại tài sản: `Honda`)
-Lãi suất đối với Xe máy được tính theo chu kỳ **30 ngày lũy tiến** chia nhỏ làm 3 mốc (10 ngày, 20 ngày, 30 ngày) và phân loại theo số tiền gốc cầm cố:
+Lãi suất đối với Xe máy được tính theo chu kỳ **30 ngày lũy tiến** chia nhỏ làm các mốc ngày chi tiết và phân loại theo số tiền gốc cầm cố:
 
 ### Bảng biểu phí lãi suất Xe máy (Honda):
 
-| Số Tiền Cầm Gốc (VND) | Lãi mốc 10 ngày đầu (`rate10`) | Lãi mốc 20 ngày đầu (`rate20`) | Lãi mốc 30 ngày đầu (`rate30`) |
-| :--- | :---: | :---: | :---: |
-| **Dưới hoặc bằng 3.000.000đ** | 10% gốc | 15% gốc | 20% gốc |
-| **Từ 3.000.001đ đến 4.000.000đ** | 8% gốc | 12% gốc | 15% gốc |
-| **Từ 4.000.001đ đến 5.000.000đ** | 4% gốc | 8% gốc | 10% gốc |
-| **Từ 5.000.001đ đến 16.000.000đ** | 3% gốc | 5% gốc | 7% gốc |
-| **Trên 16.000.000đ** | 2% gốc | 4% gốc | 5% gốc |
+#### Khung 1: Gốc từ 1.000.000đ đến 3.000.000đ (Tính tiền lãi cố định)
+* 1 - 9 ngày: **150.000đ**
+* 10 - 14 ngày: **200.000đ**
+* 15 - 19 ngày: **250.000đ**
+* 20 - 30 ngày: **300.000đ**
 
-### Thuật toán tính lãi lũy tiến:
-* **Nếu số ngày cầm $\le$ 30 ngày**:
-  * Từ 1 đến 10 ngày: Lãi = Tiền gốc $\times$ `rate10`
-  * Từ 11 đến 20 ngày: Lãi = Tiền gốc $\times$ `rate20`
-  * Từ 21 đến 30 ngày: Lãi = Tiền gốc $\times$ `rate30`
-* **Nếu số ngày cầm > 30 ngày**:
-  * Tính số chu kỳ 30 ngày trọn vẹn: `cycles = Phần nguyên của (Số ngày / 30)`
-  * Số ngày lẻ còn lại: `remainder = Số ngày % 30`
-  * **Lãi tích lũy** = (Tiền gốc $\times$ `rate30` $\times$ `cycles`) + (Lãi của số ngày lẻ còn lại)
-    * *Nếu ngày lẻ $\le$ 10 ngày*: Lãi cộng thêm = Tiền gốc $\times$ `rate10`
-    * *Nếu ngày lẻ từ 11 đến 20 ngày*: Lãi cộng thêm = Tiền gốc $\times$ `rate20`
-    * *Nếu ngày lẻ từ 21 đến 29 ngày*: Lãi cộng thêm = Tiền gốc $\times$ `rate30`
+#### Khung 2: Gốc từ 3.000.001đ đến 4.000.000đ (Khung 4 triệu)
+* 1 - 7 ngày: **3,9%** gốc
+* 8 - 14 ngày: **4,5%** gốc
+* 15 - 19 ngày: **6,0%** gốc
+* 20 - 30 ngày: **9,0%** gốc
 
-#### Ví dụ thực tế (Xe máy):
-Khách cầm xe máy **4.000.000đ** (nằm trong khung từ 3 triệu đến 4 triệu: `rate10 = 8%`, `rate20 = 12%`, `rate30 = 15%`).
-* **Tại ngày 0 hoặc ngày 5**: Khách cầm dưới 10 ngày $\rightarrow$ Lãi = 4.000.000đ $\times$ 8% = **320.000đ**.
-* **Tại ngày 15**: Khách cầm từ 11 đến 20 ngày $\rightarrow$ Lãi = 4.000.000đ $\times$ 12% = **480.000đ**.
-* **Tại ngày 35**: Khách cầm 35 ngày (1 chu kỳ 30 ngày + 5 ngày lẻ):
-  * Lãi 30 ngày đầu = 4.000.000đ $\times$ 15% = 600.000đ.
-  * Lãi 5 ngày lẻ (áp dụng mức 10 ngày) = 4.000.000đ $\times$ 8% = 320.000đ.
-  * Tổng lãi = 600.000đ + 320.000đ = **920.000đ**.
+#### Khung 3: Gốc từ 4.000.001đ đến 5.000.000đ (Khung 5 triệu)
+* 1 - 7 ngày: **3,0%** gốc
+* 8 - 14 ngày: **4,0%** gốc
+* 15 - 19 ngày: **6,0%** gốc
+* 20 - 30 ngày: **8,0%** gốc
+
+#### Khung 4: Gốc từ 5.000.001đ đến 16.000.000đ (Khung 6 - 16 triệu)
+* 1 - 7 ngày: **2,0%** gốc
+* 8 - 9 ngày: **2,8%** gốc
+* Đúng 10 ngày: **3,5%** gốc
+* 11 - 14 ngày: **4,0%** gốc
+* 15 - 19 ngày: **5,0%** gốc
+* 20 - 30 ngày: **7,0%** gốc
+
+#### Khung 5: Gốc từ 17.000.000đ trở lên (Khung 17 triệu trở lên)
+* 1 - 7 ngày: **2,0%** gốc
+* 8 - 9 ngày: **2,8%** gốc
+* Đúng 10 ngày: **3,0%** gốc
+* 11 - 14 ngày: **3,5%** gốc
+* 15 - 19 ngày: **4,5%** gốc
+* 20 - 30 ngày: **6,0%** gốc
+
+### Thuật toán tính lãi lũy tiến (> 30 ngày):
+Khi số ngày cầm vượt quá 30 ngày, hệ thống sẽ tính theo chu kỳ 30 ngày trọn vẹn (mỗi chu kỳ tính bằng lãi mốc 30 ngày của khung đó) cộng thêm lãi của số ngày lẻ dư ra tương tự như chu kỳ đầu:
+* **Lãi tích lũy** = (Lãi mốc 30 ngày $\times$ `cycles`) + (Lãi của số ngày lẻ còn lại)
+
+#### Ví dụ thực tế:
+* **Ví dụ 1 (Gốc 2.000.000đ, cầm 35 ngày)**:
+  * 30 ngày đầu (1 chu kỳ): **300.000đ**
+  * 5 ngày lẻ dư ra (mốc 1-9 ngày): **150.000đ**
+  * 👉 **Tổng lãi** = 300.000đ + 150.000đ = **450.000đ**
+* **Ví dụ 2 (Gốc 10.000.000đ, cầm 42 ngày)**:
+  * 30 ngày đầu (1 chu kỳ): $10.000.000 \times 7\% = 700.000đ$
+  * 12 ngày lẻ dư ra (mốc 11-14 ngày): $10.000.000 \times 4\% = 400.000đ$
+  * 👉 **Tổng lãi** = 700.000đ + 400.000đ = **1.100.000đ**
 
 ---
 

@@ -415,32 +415,81 @@ function calculateInterest(principal, assetType, days) {
     const calcDays = Math.max(1, days);
     
     if (assetType === 'Honda') {
-        let rate10 = 0, rate20 = 0, rate30 = 0;
-        
+        // Khung 1-3tr: Tính tiền lãi cố định
         if (principal <= 3000000) {
-            rate10 = 0.10; rate20 = 0.15; rate30 = 0.20;
-        } else if (principal <= 4000000) {
-            rate10 = 0.08; rate20 = 0.12; rate30 = 0.15;
-        } else if (principal <= 5000000) {
-            rate10 = 0.04; rate20 = 0.08; rate30 = 0.10;
-        } else if (principal <= 16000000) {
-            rate10 = 0.03; rate20 = 0.05; rate30 = 0.07;
-        } else {
-            rate10 = 0.02; rate20 = 0.04; rate30 = 0.05;
+            const getFlatRate = (d) => {
+                if (d <= 9) return 150000;
+                if (d <= 14) return 200000;
+                if (d <= 19) return 250000;
+                return 300000;
+            };
+            if (calcDays <= 30) {
+                return getFlatRate(calcDays);
+            } else {
+                const cycles = Math.floor(calcDays / 30);
+                const rem = calcDays % 30;
+                let interest = 300000 * cycles;
+                if (rem > 0) {
+                    interest += getFlatRate(rem);
+                }
+                return interest;
+            }
         }
         
+        // Các khung tính theo % gốc
+        let rateSchedule = [];
+        if (principal <= 4000000) {
+            rateSchedule = [
+                { days: 7, rate: 0.039 },
+                { days: 14, rate: 0.045 },
+                { days: 19, rate: 0.060 },
+                { days: 30, rate: 0.090 }
+            ];
+        } else if (principal <= 5000000) {
+            rateSchedule = [
+                { days: 7, rate: 0.030 },
+                { days: 14, rate: 0.040 },
+                { days: 19, rate: 0.060 },
+                { days: 30, rate: 0.080 }
+            ];
+        } else if (principal <= 16000000) {
+            rateSchedule = [
+                { days: 7, rate: 0.020 },
+                { days: 9, rate: 0.028 },
+                { days: 10, rate: 0.035 },
+                { days: 14, rate: 0.040 },
+                { days: 19, rate: 0.050 },
+                { days: 30, rate: 0.070 }
+            ];
+        } else {
+            // >= 17tr
+            rateSchedule = [
+                { days: 7, rate: 0.020 },
+                { days: 9, rate: 0.028 },
+                { days: 10, rate: 0.030 },
+                { days: 14, rate: 0.035 },
+                { days: 19, rate: 0.045 },
+                { days: 30, rate: 0.060 }
+            ];
+        }
+        
+        const getRate = (d) => {
+            for (const tier of rateSchedule) {
+                if (d <= tier.days) return tier.rate;
+            }
+            return rateSchedule[rateSchedule.length - 1].rate;
+        };
+        
+        const maxRate = rateSchedule[rateSchedule.length - 1].rate;
+        
         if (calcDays <= 30) {
-            if (calcDays <= 10) return principal * rate10;
-            if (calcDays <= 20) return principal * rate20;
-            return principal * rate30;
+            return principal * getRate(calcDays);
         } else {
             const cycles = Math.floor(calcDays / 30);
             const rem = calcDays % 30;
-            let interest = principal * rate30 * cycles;
+            let interest = principal * maxRate * cycles;
             if (rem > 0) {
-                if (rem <= 10) interest += principal * rate10;
-                else if (rem <= 20) interest += principal * rate20;
-                else interest += principal * rate30;
+                interest += principal * getRate(rem);
             }
             return interest;
         }
