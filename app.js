@@ -452,7 +452,7 @@ function calculateInterest(principal, assetType, days) {
                 { days: 19, rate: 0.060 },
                 { days: 30, rate: 0.080 }
             ];
-        } else if (principal <= 16000000) {
+        } else if (principal < 17000000) {
             rateSchedule = [
                 { days: 7, rate: 0.020 },
                 { days: 9, rate: 0.028 },
