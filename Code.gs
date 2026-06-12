@@ -21,6 +21,14 @@ function createJsonResponse(data) {
 function doGet(e) {
   try {
     var cache = CacheService.getScriptCache();
+    
+    // Nếu có tham số clean=true, ép buộc xóa cache cũ để lấy dữ liệu mới nhất
+    if (e && e.parameter && e.parameter.clean === "true") {
+      try {
+        cache.remove("pawnshop_data");
+      } catch (cacheErr) {}
+    }
+    
     var cachedData = cache.get("pawnshop_data");
     
     // Nếu có dữ liệu trong Cache, trả về ngay lập tức
@@ -537,4 +545,17 @@ function getOrCreateFolder(folderName, propertyKey, parentFolderId) {
   
   props.setProperty(propertyKey, folder.getId());
   return folder;
+}
+
+// TỰ ĐỘNG XÓA CACHE KHI CÓ CHỈNH SỬA TRỰC TIẾP TRÊN GOOGLE SHEETS
+function onEdit(e) {
+  try {
+    CacheService.getScriptCache().remove("pawnshop_data");
+  } catch (err) {}
+}
+
+function onChange(e) {
+  try {
+    CacheService.getScriptCache().remove("pawnshop_data");
+  } catch (err) {}
 }

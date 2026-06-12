@@ -339,7 +339,9 @@ async function syncData(isSilent = false) {
     }
     
     try {
-        const response = await fetch(gasUrl);
+        // Nếu không phải tải ngầm (e.g. nhấn nút làm mới), thêm clean=true để xóa cache trên Apps Script
+        const fetchUrl = isSilent ? gasUrl : (gasUrl.indexOf('?') > -1 ? gasUrl + '&clean=true' : gasUrl + '?clean=true');
+        const response = await fetch(fetchUrl);
         const resData = await response.json();
         
         if (resData.success) {
