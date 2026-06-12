@@ -339,8 +339,14 @@ async function syncData(isSilent = false) {
     }
     
     try {
-        // Nếu không phải tải ngầm (e.g. nhấn nút làm mới), thêm clean=true để xóa cache trên Apps Script
-        const fetchUrl = isSilent ? gasUrl : (gasUrl.indexOf('?') > -1 ? gasUrl + '&clean=true' : gasUrl + '?clean=true');
+        // Thêm tham số _t=timestamp để tránh trình duyệt cache request HTTP GET. Nếu làm mới bằng tay, thêm clean=true.
+        let fetchUrl = gasUrl;
+        const separator = fetchUrl.indexOf('?') > -1 ? '&' : '?';
+        if (isSilent) {
+            fetchUrl += `${separator}_t=${Date.now()}`;
+        } else {
+            fetchUrl += `${separator}clean=true&_t=${Date.now()}`;
+        }
         const response = await fetch(fetchUrl);
         const resData = await response.json();
         
