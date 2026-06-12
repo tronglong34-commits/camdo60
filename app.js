@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadQRBase64();
     
     // 7. Refresh data
-    syncData();
+    syncData(true);
 });
 
 // Load QR image thành base64 và cache lại
@@ -304,61 +304,88 @@ function updateDatabaseStatus() {
 // ==================== DATA SYNCING ====================
 async function syncData(isSilent = false) {
     updateDatabaseStatus();
-    if (!isSilent) showLoading(true, "Đang tải dữ liệu...");
+    
+    // Check if we have cached data locally
+    let localContracts = localStorage.getItem('pawnshop_contracts');
+    let localHistory = localStorage.getItem('pawnshop_history');
+    let hasCache = !!(localContracts || localHistory);
+    
+    // If cache exists, load and render it immediately for perceived instant speed (SWR)
+    if (hasCache) {
+        state.contracts = localContracts ? JSON.parse(localContracts) : [];
+        state.history = localHistory ? JSON.parse(localHistory) : [];
+        renderAll();
+    } else if (isDemoMode) {
+        // Use dummy data if in demo mode and no cache exists
+        state.contracts = dummyContracts;
+        state.history = dummyHistory;
+        localStorage.setItem('pawnshop_contracts', JSON.stringify(dummyContracts));
+        localStorage.setItem('pawnshop_history', JSON.stringify(dummyHistory));
+        renderAll();
+    }
+    
+    // Show spinner if we want active feedback and there is no cache to show,
+    // or if we specifically demand a foreground refresh (isSilent = false)
+    if (!isSilent && !hasCache) {
+        showLoading(true, "Đang tải dữ liệu...");
+    } else if (!isSilent && hasCache) {
+        // If it is manual sync and we already have cache rendered, show a friendly silent notification
+        showToast("Đang đồng bộ dữ liệu mới...", "info");
+    }
     
     if (isDemoMode) {
-        let localContracts = localStorage.getItem('pawnshop_contracts');
-        let localHistory = localStorage.getItem('pawnshop_history');
-        
-        if (localContracts) {
-            state.contracts = JSON.parse(localContracts);
-        } else {
-            state.contracts = dummyContracts;
-            localStorage.setItem('pawnshop_contracts', JSON.stringify(dummyContracts));
-        }
-        
-        if (localHistory) {
-            state.history = JSON.parse(localHistory);
-        } else {
-            state.history = dummyHistory;
-            localStorage.setItem('pawnshop_history', JSON.stringify(dummyHistory));
-        }
-        
         if (!isSilent) showLoading(false);
-        renderAll();
-    } else {
-        try {
-            const response = await fetch(gasUrl);
-            const resData = await response.json();
+        return;
+    }
+    
+    try {
+        const response = await fetch(gasUrl);
+        const resData = await response.json();
+        
+        if (resData.success) {
+            const newContracts = resData.data.contracts || [];
+            const newHistory = resData.data.history || [];
             
-            if (resData.success) {
-                state.contracts = resData.data.contracts || [];
-                state.history = resData.data.history || [];
+            // Check if backend data differs from local cache
+            const hasChanges = JSON.stringify(newContracts) !== JSON.stringify(state.contracts) ||
+                               JSON.stringify(newHistory) !== JSON.stringify(state.history);
+            
+            if (hasChanges || !hasCache) {
+                state.contracts = newContracts;
+                state.history = newHistory;
                 
                 localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
                 localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
                 
-                console.log("=== DANH SÁCH HỢP ĐỒNG ĐÃ ĐỒNG BỘ ===");
-                state.contracts.forEach(c => {
-                    console.log(`Mã HĐ: ${c.Ma_HD} | Khách: ${c.Ten_Khach_Hang} | Hinh_Anh:`, c.Hinh_Anh ? c.Hinh_Anh.substring(0, 100) + (c.Hinh_Anh.length > 100 ? "..." : "") : "Trống");
-                });
-                
+                renderAll();
                 if (!isSilent) showToast("Đồng bộ thành công!", "success");
             } else {
-                throw new Error(resData.error || "Lỗi không xác định");
+                if (!isSilent) showToast("Dữ liệu đã ở bản mới nhất!", "success");
             }
-        } catch (err) {
-            console.error("Fetch API error:", err);
-            if (!isSilent) showToast("Lỗi kết nối API Google Sheets. Đang dùng dữ liệu cache offline.", "error");
             
-            let localContracts = localStorage.getItem('pawnshop_contracts') || "[]";
-            let localHistory = localStorage.getItem('pawnshop_history') || "[]";
-            state.contracts = JSON.parse(localContracts);
-            state.history = JSON.parse(localHistory);
-        } finally {
-            if (!isSilent) showLoading(false);
+            console.log("=== DANH SÁCH HỢP ĐỒNG ĐÃ ĐỒNG BỘ ===");
+            state.contracts.forEach(c => {
+                console.log(`Mã HĐ: ${c.Ma_HD} | Khách: ${c.Ten_Khach_Hang} | Hinh_Anh:`, c.Hinh_Anh ? c.Hinh_Anh.substring(0, 100) + (c.Hinh_Anh.length > 100 ? "..." : "") : "Trống");
+            });
+        } else {
+            throw new Error(resData.error || "Lỗi không xác định");
+        }
+    } catch (err) {
+        console.error("Fetch API error:", err);
+        if (!isSilent) {
+            showToast("Lỗi kết nối API Google Sheets. Đang dùng dữ liệu cache offline.", "error");
+        }
+        
+        // If fetch fails and we didn't have cache before, try loading whatever is there
+        if (!hasCache) {
+            let localContractsFallback = localStorage.getItem('pawnshop_contracts') || "[]";
+            let localHistoryFallback = localStorage.getItem('pawnshop_history') || "[]";
+            state.contracts = JSON.parse(localContractsFallback);
+            state.history = JSON.parse(localHistoryFallback);
             renderAll();
         }
+    } finally {
+        if (!isSilent) showLoading(false);
     }
 }
 
