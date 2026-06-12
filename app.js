@@ -588,6 +588,38 @@ function renderAll() {
     renderStatistics();
 }
 
+const statsVisibility = {
+    'stat-active-count': false,
+    'stat-total-principal': false,
+    'stat-accrued-interest': false,
+    'stat-total-collected': false
+};
+
+function toggleStatMask(id, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    statsVisibility[id] = !statsVisibility[id];
+    renderDashboard();
+}
+
+function updateStatElement(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const eyeIcon = document.getElementById(`eye-${id}`);
+    if (statsVisibility[id]) {
+        el.innerText = value;
+        if (eyeIcon) {
+            eyeIcon.className = "fa-solid fa-eye text-xs text-slate-500 hover:text-slate-300";
+        }
+    } else {
+        el.innerText = "**********";
+        if (eyeIcon) {
+            eyeIcon.className = "fa-solid fa-eye-slash text-xs text-slate-500 hover:text-slate-300";
+        }
+    }
+}
+
 function renderDashboard() {
     const active = state.contracts.filter(c => c.Trang_Thai === 'Active');
     
@@ -605,10 +637,10 @@ function renderDashboard() {
         totalCollected += parseFloat(item.So_Tien_Dong) || 0;
     });
     
-    document.getElementById('stat-active-count').innerText = active.length;
-    document.getElementById('stat-total-principal').innerText = formatVND(totalPrincipal);
-    document.getElementById('stat-accrued-interest').innerText = formatVND(totalAccrued);
-    document.getElementById('stat-total-collected').innerText = formatVND(totalCollected);
+    updateStatElement('stat-active-count', active.length);
+    updateStatElement('stat-total-principal', formatVND(totalPrincipal));
+    updateStatElement('stat-accrued-interest', formatVND(totalAccrued));
+    updateStatElement('stat-total-collected', formatVND(totalCollected));
 }
 
 function renderActiveContracts() {
@@ -1174,6 +1206,10 @@ let uploadedImageBase64 = "";
 let uploadedCccdFrontBase64 = "";
 let uploadedCccdBackBase64 = "";
 
+let editUploadedImageBase64 = "";
+let editUploadedCccdFrontBase64 = "";
+let editUploadedCccdBackBase64 = "";
+
 function previewUploadImage(input, type = 'asset') {
     const file = input.files[0];
     if (!file) return;
@@ -1252,6 +1288,42 @@ function previewUploadImage(input, type = 'asset') {
                 if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
                 
                 showToast("Ảnh CCCD mặt sau tải lên thành công!", "info");
+            } else if (type === 'edit-cccd-front') {
+                editUploadedCccdFrontBase64 = compressedBase64;
+                
+                const placeholder = document.getElementById('modal-edit-cccd-front-upload-placeholder');
+                if (placeholder) placeholder.classList.add('hidden');
+                
+                const previewContainer = document.getElementById('modal-edit-cccd-front-image-upload-preview-container');
+                const previewImg = document.getElementById('modal-edit-cccd-front-image-upload-preview');
+                if (previewImg) previewImg.src = editUploadedCccdFrontBase64;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+                
+                showToast("Ảnh CCCD mặt trước tải lên thành công!", "info");
+            } else if (type === 'edit-cccd-back') {
+                editUploadedCccdBackBase64 = compressedBase64;
+                
+                const placeholder = document.getElementById('modal-edit-cccd-back-upload-placeholder');
+                if (placeholder) placeholder.classList.add('hidden');
+                
+                const previewContainer = document.getElementById('modal-edit-cccd-back-image-upload-preview-container');
+                const previewImg = document.getElementById('modal-edit-cccd-back-image-upload-preview');
+                if (previewImg) previewImg.src = editUploadedCccdBackBase64;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+                
+                showToast("Ảnh CCCD mặt sau tải lên thành công!", "info");
+            } else if (type === 'edit-asset') {
+                editUploadedImageBase64 = compressedBase64;
+                
+                const placeholder = document.getElementById('modal-edit-upload-placeholder');
+                if (placeholder) placeholder.classList.add('hidden');
+                
+                const previewContainer = document.getElementById('modal-edit-image-upload-preview-container');
+                const previewImg = document.getElementById('modal-edit-image-upload-preview');
+                if (previewImg) previewImg.src = editUploadedImageBase64;
+                if (previewContainer) previewContainer.classList.remove('hidden');
+                
+                showToast("Hình ảnh tài sản đã tải lên thành công!", "info");
             } else {
                 uploadedImageBase64 = compressedBase64;
                 
@@ -1309,6 +1381,33 @@ function clearUploadedImage(e, type = 'asset') {
             receiptCccdImg.classList.add('hidden');
         }
         if (receiptCccdIcon) receiptCccdIcon.classList.remove('hidden');
+    } else if (type === 'edit-cccd-front') {
+        document.getElementById('modal-edit-cccd-front-image').value = "";
+        editUploadedCccdFrontBase64 = "";
+        const previewImg = document.getElementById('modal-edit-cccd-front-image-upload-preview');
+        if (previewImg) previewImg.src = "";
+        const previewContainer = document.getElementById('modal-edit-cccd-front-image-upload-preview-container');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const placeholder = document.getElementById('modal-edit-cccd-front-upload-placeholder');
+        if (placeholder) placeholder.classList.remove('hidden');
+    } else if (type === 'edit-cccd-back') {
+        document.getElementById('modal-edit-cccd-back-image').value = "";
+        editUploadedCccdBackBase64 = "";
+        const previewImg = document.getElementById('modal-edit-cccd-back-image-upload-preview');
+        if (previewImg) previewImg.src = "";
+        const previewContainer = document.getElementById('modal-edit-cccd-back-image-upload-preview-container');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const placeholder = document.getElementById('modal-edit-cccd-back-upload-placeholder');
+        if (placeholder) placeholder.classList.remove('hidden');
+    } else if (type === 'edit-asset') {
+        document.getElementById('modal-edit-asset-image').value = "";
+        editUploadedImageBase64 = "";
+        const previewImg = document.getElementById('modal-edit-image-upload-preview');
+        if (previewImg) previewImg.src = "";
+        const previewContainer = document.getElementById('modal-edit-image-upload-preview-container');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const placeholder = document.getElementById('modal-edit-upload-placeholder');
+        if (placeholder) placeholder.classList.remove('hidden');
     } else {
         document.getElementById('asset-image').value = "";
         uploadedImageBase64 = "";
@@ -2038,6 +2137,16 @@ function switchTab(tabId) {
     
     document.getElementById(`tab-${tabId}-content`).classList.remove('hidden');
     
+    // Ẩn thanh thống kê ở tab Lập hợp đồng mới, hiện ở các tab khác
+    const heroBanner = document.getElementById('dashboard-hero-banner');
+    if (heroBanner) {
+        if (tabId === 'new-contract') {
+            heroBanner.classList.add('hidden');
+        } else {
+            heroBanner.classList.remove('hidden');
+        }
+    }
+    
     updateTabUI(tabId);
     
     if (tabId === 'active-contracts') {
@@ -2281,7 +2390,7 @@ function exportReceiptToPDF(contractId) {
     
     pdfContainer.innerHTML = `
     <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#000;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
-        <div style="border:2px solid #000;padding:18px;border-radius:12px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
+        <div style="padding:4px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
         
         <table style="width:100%;border-collapse:collapse;margin-bottom:8px;border-bottom:1.5px dashed #000;padding-bottom:8px;">
             <tr>
@@ -2294,8 +2403,10 @@ function exportReceiptToPDF(contractId) {
                 <td style="width:50%;vertical-align:top;text-align:center;border-left:1px solid #ccc;padding-left:10px;">
                     <div style="font-size:9px;font-weight:700;color:#000;margin-bottom:1px;line-height:1.3;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                     <div style="font-size:8px;font-weight:700;color:#222;margin-bottom:4px;border-bottom:1px solid #777;display:inline-block;padding-bottom:2px;">Độc lập - Tự do - Hạnh phúc</div>
-                    <div style="font-size:14px;font-weight:700;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
-                    <div style="font-size:14px;font-weight:800;color:#000;margin-top:2px;text-transform:uppercase;">SỐ: </div>
+                    <div style="display:inline-block;text-align:left;">
+                        <div style="font-size:14px;font-weight:700;color:#000;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">HỢP ĐỒNG CẦM ĐỒ</div>
+                        <div style="font-size:14px;font-weight:800;color:#000;margin-top:2px;text-transform:uppercase;">SỐ: </div>
+                    </div>
                     <div style="font-size:10px;color:#222;margin-top:1px;">Hotline: 0962772783(ZALO) (Mr. Long)</div>
                 </td>
             </tr>
@@ -2365,14 +2476,14 @@ function exportReceiptToPDF(contractId) {
             </tr>
         </table>
         
-        <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-size:10px;font-weight:700;color:#000;">
+        <table style="width:100%;border-collapse:collapse;margin-top:15px;padding-top:10px;font-size:10px;font-weight:700;color:#000;">
             <tr>
                 <td style="width:50%;text-align:center;vertical-align:top;">
-                    <div style="text-transform:uppercase;margin-bottom:40px;">CHỦ TIỆM</div>
+                    <div style="text-transform:uppercase;margin-bottom:95px;">CHỦ TIỆM</div>
                     <div style="font-weight:600;color:#555;">CẦM ĐỒ 60</div>
                 </td>
                 <td style="width:50%;text-align:center;vertical-align:top;">
-                    <div style="text-transform:uppercase;margin-bottom:40px;">KHÁCH HÀNG</div>
+                    <div style="text-transform:uppercase;margin-bottom:95px;">KHÁCH HÀNG</div>
                     <div style="font-weight:700;color:#000;text-transform:uppercase;">${previewSignatureName}</div>
                 </td>
             </tr>
@@ -2442,19 +2553,91 @@ function exportReceiptToPDF(contractId) {
 }
 
 // ==================== EDIT CONTRACT ====================
+function setupEditImagePreview(type, imageUrl) {
+    let inputId, containerId, previewId, placeholderId;
+    if (type === 'edit-asset') {
+        inputId = 'modal-edit-asset-image';
+        containerId = 'modal-edit-image-upload-preview-container';
+        previewId = 'modal-edit-image-upload-preview';
+        placeholderId = 'modal-edit-upload-placeholder';
+        editUploadedImageBase64 = imageUrl || "";
+    } else if (type === 'edit-cccd-front') {
+        inputId = 'modal-edit-cccd-front-image';
+        containerId = 'modal-edit-cccd-front-image-upload-preview-container';
+        previewId = 'modal-edit-cccd-front-image-upload-preview';
+        placeholderId = 'modal-edit-cccd-front-upload-placeholder';
+        editUploadedCccdFrontBase64 = imageUrl || "";
+    } else if (type === 'edit-cccd-back') {
+        inputId = 'modal-edit-cccd-back-image';
+        containerId = 'modal-edit-cccd-back-image-upload-preview-container';
+        previewId = 'modal-edit-cccd-back-image-upload-preview';
+        placeholderId = 'modal-edit-cccd-back-upload-placeholder';
+        editUploadedCccdBackBase64 = imageUrl || "";
+    }
+    
+    const input = document.getElementById(inputId);
+    if (input) input.value = "";
+    
+    const container = document.getElementById(containerId);
+    const preview = document.getElementById(previewId);
+    const placeholder = document.getElementById(placeholderId);
+    
+    if (imageUrl && (imageUrl.startsWith("http") || imageUrl.startsWith("data:"))) {
+        if (preview) preview.src = formatImageUrl(imageUrl, 400);
+        if (container) container.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+    } else {
+        if (preview) preview.src = "";
+        if (container) container.classList.add('hidden');
+        if (placeholder) placeholder.classList.remove('hidden');
+    }
+}
+
+function updateEditAssetPlaceholders() {
+    const type = document.getElementById('modal-edit-asset-type').value;
+    const label = document.getElementById('modal-edit-asset-detail-label');
+    const input = document.getElementById('modal-edit-asset-detail');
+    
+    if (label && input) {
+        if (type === 'Honda') {
+            label.innerHTML = `Biển Số Xe <span class="text-red-500">*</span>`;
+            input.placeholder = "Ví dụ: 29X1-12345";
+        } else {
+            label.innerHTML = `Chi Tiết Thiết Bị <span class="text-red-500">*</span>`;
+            input.placeholder = "Ví dụ: Model máy, dung lượng, màu sắc...";
+        }
+    }
+}
+
 function openEditContractModal(hdId) {
     const contract = state.contracts.find(c => c.Ma_HD === hdId);
     if (!contract) return;
     
     document.getElementById('modal-edit-hd-id').value = hdId;
     document.getElementById('modal-edit-hd-display').innerText = hdId;
-    document.getElementById('modal-edit-customer-display').innerText = contract.Ten_Khach_Hang;
+    
+    document.getElementById('modal-edit-customer-name').value = contract.Ten_Khach_Hang || "";
+    document.getElementById('modal-edit-customer-phone').value = contract.So_Dien_Thoai || "";
+    document.getElementById('modal-edit-customer-cccd').value = contract.So_CCCD || "";
+    
+    const assetTypeEl = document.getElementById('modal-edit-asset-type');
+    if (assetTypeEl) {
+        assetTypeEl.value = contract.Loai_Tai_San || "Honda";
+    }
+    
+    updateEditAssetPlaceholders();
+    document.getElementById('modal-edit-asset-detail').value = contract.Chi_Tiet_Tai_San || "";
     
     const currentAmount = parseFloat(contract.So_Tien_Cam) || 0;
     document.getElementById('modal-edit-current-amount').innerText = formatVND(currentAmount);
     document.getElementById('modal-edit-amount-input').value = formatNumber(currentAmount);
+    
+    document.getElementById('modal-edit-contract-date').value = contract.Ngay_Cam || "";
     document.getElementById('modal-edit-notes').value = contract.Ghi_Chu || "";
-    document.getElementById('modal-edit-reason').value = "";
+    
+    setupEditImagePreview('edit-asset', contract.Hinh_Anh);
+    setupEditImagePreview('edit-cccd-front', contract.Hinh_CCCD_Truoc);
+    setupEditImagePreview('edit-cccd-back', contract.Hinh_CCCD_Sau);
     
     document.getElementById('edit-contract-modal').classList.remove('hidden');
 }
@@ -2476,13 +2659,18 @@ async function handleEditContract(e) {
     
     try {
         const hdId = document.getElementById('modal-edit-hd-id').value;
+        const newName = document.getElementById('modal-edit-customer-name').value.trim();
+        const newPhone = document.getElementById('modal-edit-customer-phone').value.trim();
+        const newCccd = document.getElementById('modal-edit-customer-cccd').value.trim();
+        const newAssetType = document.getElementById('modal-edit-asset-type').value;
+        const newAssetDetail = document.getElementById('modal-edit-asset-detail').value.trim();
         const rawAmount = document.getElementById('modal-edit-amount-input').value.replace(/,/g, '');
         const newAmount = parseFloat(rawAmount) || 0;
+        const newDate = document.getElementById('modal-edit-contract-date').value;
         const newNotes = document.getElementById('modal-edit-notes').value.trim();
-        const reason = document.getElementById('modal-edit-reason').value.trim();
         
-        if (newAmount <= 0) {
-            showToast("Số tiền cầm phải lớn hơn 0!", "error");
+        if (!newName || !newPhone || !newAssetDetail || !newDate) {
+            showToast("Vui lòng điền đầy đủ các trường bắt buộc (*)", "error");
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.style.opacity = '1';
@@ -2491,8 +2679,8 @@ async function handleEditContract(e) {
             return;
         }
         
-        if (!reason) {
-            showToast("Vui lòng nhập lý do chỉnh sửa!", "error");
+        if (newAmount <= 0) {
+            showToast("Số tiền cầm phải lớn hơn 0!", "error");
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.style.opacity = '1';
@@ -2510,9 +2698,20 @@ async function handleEditContract(e) {
         const payload = {
             action: "editContract",
             Ma_HD: hdId,
+            Ten_Khach_Hang: newName,
+            So_Dien_Thoai: newPhone,
+            So_CCCD: newCccd,
+            Loai_Tai_San: newAssetType,
+            Chi_Tiet_Tai_San: newAssetDetail,
             So_Tien_Cam: newAmount,
+            Ngay_Cam: newDate,
             Ghi_Chu: newNotes,
-            Ly_Do: reason
+            image_data: editUploadedImageBase64,
+            image_name: editUploadedImageBase64.startsWith("data:") ? `${hdId}_asset.jpg` : undefined,
+            cccd_front_image_data: editUploadedCccdFrontBase64,
+            cccd_front_image_name: editUploadedCccdFrontBase64.startsWith("data:") ? `${hdId}_cccd_front.jpg` : undefined,
+            cccd_back_image_data: editUploadedCccdBackBase64,
+            cccd_back_image_name: editUploadedCccdBackBase64.startsWith("data:") ? `${hdId}_cccd_back.jpg` : undefined
         };
         
         const res = await postToAPI(payload);
@@ -2521,24 +2720,28 @@ async function handleEditContract(e) {
             // Cập nhật local state
             const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
             if (contractIdx > -1) {
-                state.contracts[contractIdx].So_Tien_Cam = newAmount;
-                state.contracts[contractIdx].Ghi_Chu = newNotes;
+                if (isDemoMode) {
+                    state.contracts[contractIdx].Ten_Khach_Hang = newName;
+                    state.contracts[contractIdx].So_Dien_Thoai = newPhone;
+                    state.contracts[contractIdx].So_CCCD = newCccd;
+                    state.contracts[contractIdx].Loai_Tai_San = newAssetType;
+                    state.contracts[contractIdx].Chi_Tiet_Tai_San = newAssetDetail;
+                    state.contracts[contractIdx].So_Tien_Cam = newAmount;
+                    state.contracts[contractIdx].Ngay_Cam = newDate;
+                    state.contracts[contractIdx].Ghi_Chu = newNotes;
+                    state.contracts[contractIdx].Hinh_Anh = editUploadedImageBase64;
+                    state.contracts[contractIdx].Hinh_CCCD_Truoc = editUploadedCccdFrontBase64;
+                    state.contracts[contractIdx].Hinh_CCCD_Sau = editUploadedCccdBackBase64;
+                } else if (res.data) {
+                    state.contracts[contractIdx] = res.data;
+                }
             }
             
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
             
             closeEditContractModal();
             
-            let changeLog = `Sửa HĐ ${hdId}: `;
-            if (oldAmount !== newAmount) {
-                changeLog += `Tiền cầm ${formatVND(oldAmount)} → ${formatVND(newAmount)}. `;
-            }
-            if (oldNotes !== newNotes) {
-                changeLog += `Ghi chú đã cập nhật. `;
-            }
-            changeLog += `Lý do: ${reason}`;
-            
-            showToast(changeLog, "success");
+            showToast(`Sửa HĐ ${hdId} thành công.`, "success");
             renderAll();
         } else {
             showToast("Lỗi khi sửa hợp đồng: " + (res.error || "Lỗi API"), "error");

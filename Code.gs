@@ -362,20 +362,71 @@ function doPost(e) {
         return createJsonResponse({ success: false, error: "Không tìm thấy hợp đồng " + maHd });
       }
       
-      // Batch write F (6) to I (9) in 1 call instead of multiple getRange/setValue calls
-      var range = sheetCamDo.getRange(foundRow, 6, 1, 4); // Columns 6 to 9 (F, G, H, I)
+      // Batch write columns 1 to 14 (A to N)
+      var range = sheetCamDo.getRange(foundRow, 1, 1, 14);
       var values = range.getValues()[0];
-      if (params.So_Tien_Cam !== undefined) {
-        values[0] = parseFloat(params.So_Tien_Cam) || 0;
+      
+      if (params.Ten_Khach_Hang !== undefined) values[1] = params.Ten_Khach_Hang;
+      if (params.So_Dien_Thoai !== undefined) values[2] = params.So_Dien_Thoai;
+      if (params.Loai_Tai_San !== undefined) values[3] = params.Loai_Tai_San;
+      if (params.Chi_Tiet_Tai_San !== undefined) values[4] = params.Chi_Tiet_Tai_San;
+      if (params.So_Tien_Cam !== undefined) values[5] = parseFloat(params.So_Tien_Cam) || 0;
+      if (params.Ngay_Cam !== undefined) values[6] = params.Ngay_Cam;
+      if (params.Ghi_Chu !== undefined) values[8] = params.Ghi_Chu || "";
+      if (params.So_CCCD !== undefined) values[11] = params.So_CCCD || "";
+      
+      // Update image links if they were changed
+      if (params.image_data !== undefined) {
+        if (params.image_data === "") {
+          values[9] = ""; // Xóa hình
+        } else if (params.image_data.indexOf("http") !== 0) {
+          values[9] = saveBase64ToDrive(params.image_data, params.image_name || (maHd + "_asset.jpg"));
+        }
       }
-      if (params.Ghi_Chu !== undefined) {
-        values[3] = params.Ghi_Chu || "";
+      
+      if (params.cccd_front_image_data !== undefined) {
+        if (params.cccd_front_image_data === "") {
+          values[12] = ""; // Xóa cccd trước
+        } else if (params.cccd_front_image_data.indexOf("http") !== 0) {
+          values[12] = saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name || (maHd + "_cccd_front.jpg"));
+        }
       }
+      
+      if (params.cccd_back_image_data !== undefined) {
+        if (params.cccd_back_image_data === "") {
+          values[13] = ""; // Xóa cccd sau
+        } else if (params.cccd_back_image_data.indexOf("http") !== 0) {
+          values[13] = saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name || (maHd + "_cccd_back.jpg"));
+        }
+      }
+      
       range.setValues([values]);
+      
+      // Định dạng lại ngày để gửi về frontend
+      var formattedDate = values[6];
+      if (formattedDate instanceof Date) {
+        formattedDate = Utilities.formatDate(formattedDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
       
       return createJsonResponse({
         success: true,
-        message: "Hợp đồng " + maHd + " đã được cập nhật thành công."
+        message: "Hợp đồng " + maHd + " đã được cập nhật thành công.",
+        data: {
+          Ma_HD: values[0],
+          Ten_Khach_Hang: values[1],
+          So_Dien_Thoai: values[2],
+          Loai_Tai_San: values[3],
+          Chi_Tiet_Tai_San: values[4],
+          So_Tien_Cam: values[5],
+          Ngay_Cam: formattedDate,
+          Trang_Thai: values[7],
+          Ghi_Chu: values[8],
+          Hinh_Anh: values[9],
+          PDF_Url: values[10],
+          So_CCCD: values[11],
+          Hinh_CCCD_Truoc: values[12],
+          Hinh_CCCD_Sau: values[13]
+        }
       });
       
     } else if (action === "updateImages") {
