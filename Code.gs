@@ -17,9 +17,18 @@ function createJsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Xử lý yêu cầu GET: Lấy toàn bộ dữ liệu từ 2 tab
+// Xử lý yêu cầu GET: Lấy toàn bộ dữ liệu từ 2 tab (Hỗ trợ CacheService phản hồi siêu nhanh)
 function doGet(e) {
   try {
+    var cache = CacheService.getScriptCache();
+    var cachedData = cache.get("pawnshop_data");
+    
+    // Nếu có dữ liệu trong Cache, trả về ngay lập tức
+    if (cachedData) {
+      return ContentService.createTextOutput(cachedData)
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     // Đọc Tab Danh_Sach_Cam_Do
@@ -65,13 +74,26 @@ function doGet(e) {
       }
     }
     
-    return createJsonResponse({
+    var responseObj = {
       success: true,
       data: {
         contracts: contracts,
         history: history
       }
-    });
+    };
+    
+    var responseString = JSON.stringify(responseObj);
+    
+    // Lưu kết quả vào Cache trong 6 giờ (21600 giây - tối đa của CacheService là 6 giờ)
+    try {
+      cache.put("pawnshop_data", responseString, 21600);
+    } catch (cacheErr) {
+      // Bỏ qua nếu kích thước chuỗi vượt quá giới hạn cache của Apps Script (100KB)
+    }
+    
+    return ContentService.createTextOutput(responseString)
+      .setMimeType(ContentService.MimeType.JSON);
+      
   } catch (error) {
     return createJsonResponse({
       success: false,
@@ -83,6 +105,11 @@ function doGet(e) {
 // Xử lý yêu cầu POST: Thêm mới, cập nhật hoặc ghi lịch sử đóng lãi
 function doPost(e) {
   try {
+    // Xóa cache cũ ngay khi có bất kỳ thao tác ghi nào để đảm bảo tính đồng bộ dữ liệu mới nhất
+    try {
+      CacheService.getScriptCache().remove("pawnshop_data");
+    } catch (cacheErr) {}
+
     var params = {};
     
     // Nhận dữ liệu POST dạng JSON hoặc URL encoded
