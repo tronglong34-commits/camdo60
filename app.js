@@ -2358,9 +2358,6 @@ function exportReceiptToPDF(contractId) {
                 </td>
             </tr>
         </table>
-        <div style="text-align:center;font-size:10px;font-weight:900;letter-spacing:0.5px;color:#000;margin-top:4px;">
-            SỐ CCCD: ${previewCccd}
-        </div>
         
         <table style="width:100%;border-collapse:collapse;margin-top:auto;padding-top:10px;font-size:10px;font-weight:700;color:#000;">
             <tr>
