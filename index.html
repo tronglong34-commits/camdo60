@@ -149,19 +149,19 @@
                 <!-- Navigation Links (Desktop) -->
                 <nav class="hidden md:flex items-center gap-3">
                     <button onclick="switchTab('new-contract')" id="nav-new-contract" 
-                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-plus-circle"></i> Lập Hợp Đồng
                     </button>
                     <button onclick="switchTab('active-contracts')" id="nav-active-contracts"
-                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-receipt"></i> Hợp Đồng Đang Cầm
                     </button>
                     <button onclick="switchTab('payment-history')" id="nav-payment-history"
-                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-history"></i> Lịch Sử Đóng Lãi
                     </button>
                     <button onclick="switchTab('statistics')" id="nav-statistics"
-                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-chart-line"></i> Bảng Thống Kê
                     </button>
                 </nav>
@@ -564,7 +564,7 @@
             <!-- ==================== TAB 3: LỊCH SỬ ĐÓNG LÃI ==================== -->
             <div id="tab-payment-history-content" class="tab-content hidden space-y-6">
                 <!-- Tìm kiếm và thống kê phụ -->
-                <div class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-800/40 border border-slate-800">
+                <div class="glass-card p-5 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-800/40 border border-slate-800">
                     <div class="relative flex-1">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                             <i class="fa-solid fa-magnifying-glass text-sm"></i>
@@ -573,11 +573,17 @@
                             class="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="Tìm theo tên khách, mã HĐ, ghi chú...">
                     </div>
                     
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-calendar"></i> Lọc ngày:</span>
-                        <input type="date" id="history-date-filter" onchange="filterHistory()"
-                            class="px-3 py-2 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
-                        <button onclick="clearHistoryDateFilter()" class="text-xs text-brand-500 hover:text-brand-400 font-semibold px-2">Xóa lọc</button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-calendar"></i> Lọc ngày:</span>
+                            <input type="date" id="history-date-filter" onchange="filterHistory()"
+                                class="px-3 py-2 rounded-xl glass-input text-slate-200 text-sm bg-slate-900 border border-slate-700/50">
+                            <button onclick="clearHistoryDateFilter()" class="text-xs text-brand-500 hover:text-brand-400 font-semibold px-2">Xóa lọc</button>
+                        </div>
+                        
+                        <button onclick="openDirectPaymentModal()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-bold rounded-xl transition duration-200 shadow-lg shadow-emerald-600/25 flex items-center gap-1.5 shrink-0">
+                            <i class="fa-solid fa-plus-circle"></i> Nhập Thu Ngoài
+                        </button>
                     </div>
                 </div>
 
@@ -678,6 +684,27 @@
                         <span class="text-xs text-rose-400 font-semibold uppercase tracking-wider block">Vốn Đã Thu Hồi</span>
                         <h3 id="stat-tab-recovered-capital" class="text-2xl sm:text-3xl font-black text-rose-400 mt-2 truncate">0đ</h3>
                         <p id="stat-tab-liquidated-count" class="text-[11px] text-slate-400 mt-2">Từ 0 hợp đồng đã thanh lý</p>
+                    </div>
+                </div>
+
+                <!-- Thống Kê Giao Dịch Ngoài -->
+                <div class="border-b border-slate-800 pb-2 pt-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                        <i class="fa-solid fa-wallet text-emerald-500"></i> Thống Kê Giao Dịch Ngoài
+                    </h3>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- KPI 9: Vốn Thu Ngoài -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Tổng Vốn Thu Ngoài</span>
+                        <h3 id="stat-tab-direct-capital" class="text-2xl sm:text-3xl font-black text-white mt-2 truncate">0đ</h3>
+                        <p class="text-[11px] text-slate-400 mt-2">Tổng số vốn đã bỏ ra cho các giao dịch ngoài</p>
+                    </div>
+                    <!-- KPI 10: Lời Thu Ngoài -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                        <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block">Tổng Lời Thu Ngoài</span>
+                        <h3 id="stat-tab-direct-profit" class="text-2xl sm:text-3xl font-black text-emerald-400 mt-2 truncate">0đ</h3>
+                        <p class="text-[11px] text-slate-400 mt-2">Tổng tiền lời đã thu về từ giao dịch ngoài</p>
                     </div>
                 </div>
 
@@ -1079,6 +1106,60 @@
                     </button>
                     <button type="submit"
                         class="flex-1 py-3 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-bold rounded-xl transition duration-200 shadow-lg shadow-orange-600/20">
+                        Xác Nhận
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ==================== MODAL: NHẬP THU NGOÀI ==================== -->
+    <div id="direct-payment-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-6 rounded-2xl glass-card shadow-2xl relative border border-slate-800 bg-slate-900">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-emerald-500"></i> Nhập Giao Dịch Thu Ngoài
+                </h3>
+                <button type="button" onclick="closeDirectPaymentModal()" class="text-slate-400 hover:text-white transition duration-200">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="direct-payment-form" class="mt-4 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Ngày Giao Dịch <span class="text-red-500">*</span></label>
+                    <input type="date" id="modal-direct-date" required
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900 border border-slate-700/50">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số Tiền Vốn Bỏ Ra (VND) <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-direct-capital" required
+                        inputmode="decimal"
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm font-bold text-amber-500 bg-slate-900 border border-slate-700/50" placeholder="0">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Số Tiền Lời Thu Về (VND) <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-direct-profit" required
+                        inputmode="decimal"
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm font-bold text-emerald-400 bg-slate-900 border border-slate-700/50" placeholder="0">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Nội Dung Ghi Chú</label>
+                    <input type="text" id="modal-direct-notes"
+                        class="w-full px-4 py-3 rounded-xl glass-input text-white text-sm bg-slate-900 border border-slate-700/50" placeholder="Ví dụ: Mua bán xe cũ, thanh lý laptop...">
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeDirectPaymentModal()"
+                        class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition duration-200">
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit"
+                        class="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-xl transition duration-200 shadow-lg shadow-emerald-600/20">
                         Xác Nhận
                     </button>
                 </div>

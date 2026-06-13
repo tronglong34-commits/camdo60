@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Set initially active tab link style
     const initialTab = 'new-contract';
-    updateTabUI(initialTab);
+    switchTab(initialTab);
     
     // 3. Form input change listeners for Live Preview
     const formFields = ['customer-name', 'customer-phone', 'customer-cccd', 'asset-type', 'asset-detail', 'loan-amount-input', 'contract-date'];
@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Format currency inputs on focus/blur to prevent Gboard duplication/IME issues entirely while keeping live preview updates
-    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input', 'modal-edit-amount-input'];
+    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input', 'modal-edit-amount-input', 'modal-direct-capital', 'modal-direct-profit'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -137,6 +137,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const payInterestForm = document.getElementById('pay-interest-form');
     if (payInterestForm) {
         payInterestForm.addEventListener('submit', handlePayInterest);
+    }
+
+    const directPaymentForm = document.getElementById('direct-payment-form');
+    if (directPaymentForm) {
+        directPaymentForm.addEventListener('submit', handleDirectPayment);
     }
     
     const closeContractForm = document.getElementById('close-contract-form');
@@ -1043,8 +1048,28 @@ function renderStatistics() {
         if (!item.Ngay_Dong_Lai) return false;
         const txDate = new Date(item.Ngay_Dong_Lai);
         txDate.setHours(0, 0, 0, 0);
-        return txDate >= startOfMonth && (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ"));
+        return txDate >= startOfMonth && item.Ma_HD !== "THU_NGOAI" && (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ"));
     }).length;
+
+    // Tính toán vốn và lời của giao dịch thu ngoài (THU_NGOAI)
+    let directCapitalTotal = 0;
+    let directProfitTotal = 0;
+    
+    state.history.forEach(item => {
+        if (item.Ma_HD === "THU_NGOAI") {
+            const capitalMatch = item.Ghi_Chu.match(/Vốn:\s*([\d,.]+)/);
+            const profitMatch = item.Ghi_Chu.match(/Lời:\s*([\d,.]+)/);
+            
+            if (capitalMatch) {
+                const capVal = parseFloat(capitalMatch[1].replace(/,/g, '')) || 0;
+                directCapitalTotal += capVal;
+            }
+            if (profitMatch) {
+                const profVal = parseFloat(profitMatch[1].replace(/,/g, '')) || 0;
+                directProfitTotal += profVal;
+            }
+        }
+    });
     
     const tabActiveCountEl = document.getElementById('stat-tab-active-count');
     const tabTotalCapitalEl = document.getElementById('stat-tab-total-capital');
@@ -1056,6 +1081,8 @@ function renderStatistics() {
     const tabLiquidatingCountEl = document.getElementById('stat-tab-liquidating-count');
     const tabRecoveredCapitalEl = document.getElementById('stat-tab-recovered-capital');
     const tabLiquidatedCountEl = document.getElementById('stat-tab-liquidated-count');
+    const tabDirectCapitalEl = document.getElementById('stat-tab-direct-capital');
+    const tabDirectProfitEl = document.getElementById('stat-tab-direct-profit');
     
     if (tabActiveCountEl) tabActiveCountEl.innerText = activeCount;
     if (tabTotalCapitalEl) tabTotalCapitalEl.innerText = formatVND(totalCapital);
@@ -1067,6 +1094,8 @@ function renderStatistics() {
     if (tabLiquidatingCountEl) tabLiquidatingCountEl.innerText = `${liquidatingCount} hợp đồng chờ thanh lý (Click xem)`;
     if (tabRecoveredCapitalEl) tabRecoveredCapitalEl.innerText = formatVND(totalRecovered);
     if (tabLiquidatedCountEl) tabLiquidatedCountEl.innerText = `Từ ${liquidatedCount} hợp đồng đã thanh lý`;
+    if (tabDirectCapitalEl) tabDirectCapitalEl.innerText = formatVND(directCapitalTotal);
+    if (tabDirectProfitEl) tabDirectProfitEl.innerText = formatVND(directProfitTotal);
     
     const assetBody = document.getElementById('stat-asset-table-body');
     if (assetBody) {
@@ -1667,6 +1696,115 @@ async function handlePayInterest(e) {
     }
 }
 
+function openDirectPaymentModal() {
+    const dateInput = document.getElementById('modal-direct-date');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    document.getElementById('modal-direct-capital').value = "0";
+    document.getElementById('modal-direct-profit').value = "0";
+    document.getElementById('modal-direct-notes').value = "";
+    
+    document.getElementById('direct-payment-modal').classList.remove('hidden');
+}
+
+function closeDirectPaymentModal() {
+    document.getElementById('direct-payment-modal').classList.add('hidden');
+}
+
+async function handleDirectPayment(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+    }
+    isSubmitting = true;
+    
+    try {
+        const dateVal = document.getElementById('modal-direct-date').value;
+        const rawCapital = document.getElementById('modal-direct-capital').value.replace(/,/g, '');
+        const capitalVal = parseFloat(rawCapital) || 0;
+        const rawProfit = document.getElementById('modal-direct-profit').value.replace(/,/g, '');
+        const profitVal = parseFloat(rawProfit) || 0;
+        const userNotes = document.getElementById('modal-direct-notes').value.trim();
+        
+        if (capitalVal < 0 || profitVal < 0) {
+            showToast("Số tiền không được nhỏ hơn 0!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        if (capitalVal === 0 && profitVal === 0) {
+            showToast("Vui lòng nhập tiền vốn hoặc tiền lời!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+        
+        showLoading(true, "Đang xử lý giao dịch thu ngoài...");
+        
+        let newGdId = "GD0001";
+        if (state.history.length > 0) {
+            const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
+            newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
+        }
+        
+        // Structured note format: Thu ngoài | Vốn: [Vốn] | Lời: [Lời] | Ghi chú: [userNotes]
+        const structuredNotes = `Thu ngoài | Vốn: ${formatNumber(capitalVal)}đ | Lời: ${formatNumber(profitVal)}đ${userNotes ? ' | Ghi chú: ' + userNotes : ''}`;
+        
+        const payload = {
+            action: "addPayment",
+            Ma_HD: "THU_NGOAI",
+            Ten_Khach_Hang: "Giao dịch ngoài",
+            Ngay_Dong_Lai: dateVal,
+            So_Tien_Dong: profitVal, // Save profit as So_Tien_Dong so existing statistics automatically sum it
+            Ghi_Chu: structuredNotes
+        };
+        
+        const res = await postToAPI(payload);
+        
+        if (res.success) {
+            const newPayment = {
+                Ma_Giao_Dich: newGdId,
+                Ma_HD: "THU_NGOAI",
+                Ten_Khach_Hang: "Giao dịch ngoài",
+                Ngay_Dong_Lai: dateVal,
+                So_Tien_Dong: profitVal,
+                Ghi_Chu: structuredNotes
+            };
+            
+            state.history.push(newPayment);
+            localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+            
+            closeDirectPaymentModal();
+            showToast("Đã ghi nhận giao dịch thu ngoài thành công!", "success");
+            switchTab('payment-history');
+        } else {
+            showToast("Lỗi khi ghi nhận: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handleDirectPayment:", error);
+        showToast("Đã xảy ra lỗi hệ thống khi lưu giao dịch!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
+    }
+}
+
 function openCloseContractModal(hdId, customerName, principal, suggestedInterest) {
     document.getElementById('modal-close-hd-id').value = hdId;
     document.getElementById('modal-close-customer-name').value = customerName;
@@ -2165,12 +2303,12 @@ function switchTab(tabId) {
 function updateTabUI(tabId) {
     const tabBtns = document.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
-        btn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+        btn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
     });
     
     const activeBtn = document.getElementById(`nav-${tabId}`);
     if (activeBtn) {
-        activeBtn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 bg-brand-500 text-white shadow-lg shadow-brand-500/20";
+        activeBtn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap bg-brand-500 text-white shadow-lg shadow-brand-500/20";
     }
     
     const mobTabBtns = document.querySelectorAll('.mobile-tab-btn');
