@@ -567,7 +567,7 @@ function getContractStats(contract) {
     currentDate.setHours(0, 0, 0, 0);
 
     const diffTime = Math.max(0, currentDate - loanDate);
-    const elapsedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const elapsedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
     const principal = parseFloat(contract.So_Tien_Cam) || 0;
     const accrued = calculateInterest(principal, contract.Loai_Tai_San, elapsedDays);
