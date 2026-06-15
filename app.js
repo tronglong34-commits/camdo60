@@ -7,7 +7,7 @@ let state = {
 // Mode & Status
 let isDemoMode = false;
 let isSubmitting = false;
-let gasUrl = localStorage.getItem('pawnshop_gas_url') || "https://script.google.com/macros/s/AKfycbxSJ30EnzRb4O7QDkvhFqAWYOPWpoUI4St3cD3DvCF6DW9v-J_5sfLCheddzbmCDPdPCg/exec";
+let gasUrl = localStorage.getItem('pawnshop_gas_url') || "https://script.google.com/macros/s/AKfycbwlY9lyJBbdPF9sZ9DkFNMnUavto77nxxgBcJzWXe3GcWby8cQYnsuxhuK0kh2Xu42BeA/exec";
 
 // Dummy/Demo Data to show when offline or first time
 const dummyContracts = [
