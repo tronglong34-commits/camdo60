@@ -17,9 +17,42 @@ function createJsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Lấy thông tin tài khoản và mật khẩu từ tab Cau_Hinh
+function getStoredCredentials(ss) {
+  var creds = {
+    username: "camdo86",
+    password: "Tiemcamdo86@123"
+  };
+  try {
+    var sheetConfig = ss.getSheetByName("Cau_Hinh");
+    if (sheetConfig) {
+      var data = sheetConfig.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        var key = data[i][0].toString().trim().toLowerCase();
+        var val = data[i][1].toString().trim();
+        if (key === "username") creds.username = val;
+        if (key === "password") creds.password = val;
+      }
+    }
+  } catch (err) {}
+  return creds;
+}
+
 // Xử lý yêu cầu GET: Lấy toàn bộ dữ liệu từ 2 tab (Hỗ trợ CacheService phản hồi siêu nhanh)
 function doGet(e) {
   try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var creds = getStoredCredentials(ss);
+    
+    // Kiểm tra mật khẩu truy cập dữ liệu
+    var requestPass = (e && e.parameter && e.parameter.password) ? e.parameter.password.toString().trim() : "";
+    if (requestPass !== creds.password) {
+      return createJsonResponse({
+        success: false,
+        error: "Unauthorized: Sai hoặc thiếu mật khẩu truy cập dữ liệu."
+      });
+    }
+
     var cache = CacheService.getScriptCache();
     
     // Nếu có tham số clean=true, ép buộc xóa cache cũ để lấy dữ liệu mới nhất
@@ -129,6 +162,27 @@ function doPost(e) {
     
     var action = params.action;
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var creds = getStoredCredentials(ss);
+    
+    // Nếu là hành động đăng nhập
+    if (action === "login") {
+      var requestUser = params.username ? params.username.toString().trim() : "";
+      var requestPass = params.password ? params.password.toString().trim() : "";
+      var success = (requestUser === creds.username && requestPass === creds.password);
+      return createJsonResponse({
+        success: success,
+        message: success ? "Đăng nhập thành công!" : "Sai tài khoản hoặc mật khẩu!"
+      });
+    }
+    
+    // Đối với tất cả các hành động ghi dữ liệu khác, kiểm tra mật khẩu
+    var requestPass = params.password ? params.password.toString().trim() : "";
+    if (requestPass !== creds.password) {
+      return createJsonResponse({
+        success: false,
+        error: "Unauthorized: Mật khẩu xác thực ghi dữ liệu không đúng."
+      });
+    }
     
     if (action === "createContract") {
       var sheetCamDo = ss.getSheetByName("Danh_Sach_Cam_Do");

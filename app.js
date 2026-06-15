@@ -221,18 +221,62 @@ function checkLoginState() {
     }
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     const userVal = document.getElementById('username').value.trim();
     const passVal = document.getElementById('password').value;
-
-    if (userVal === "camdo86" && passVal === "Tiemcamdo86@123") {
-        sessionStorage.setItem('pawnshop_logged_in', 'true');
-        showToast("Đăng nhập thành công!", "success");
-        checkLoginState();
-        syncData();
-    } else {
-        showToast("Sai tài khoản hoặc mật khẩu!", "error");
+    
+    if (isDemoMode) {
+        if (userVal === "camdo86" && passVal === "Tiemcamdo86@123") {
+            sessionStorage.setItem('pawnshop_logged_in', 'true');
+            sessionStorage.setItem('pawnshop_username', userVal);
+            sessionStorage.setItem('pawnshop_password', passVal);
+            showToast("Đăng nhập thành công (Demo)!", "success");
+            checkLoginState();
+            syncData();
+        } else {
+            showToast("Sai tài khoản hoặc mật khẩu!", "error");
+        }
+        return;
+    }
+    
+    showLoading(true, "Đang xác thực đăng nhập...");
+    try {
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "login",
+                username: userVal,
+                password: passVal
+            })
+        });
+        const resData = await response.json();
+        
+        if (resData && resData.success) {
+            sessionStorage.setItem('pawnshop_logged_in', 'true');
+            sessionStorage.setItem('pawnshop_username', userVal);
+            sessionStorage.setItem('pawnshop_password', passVal);
+            showToast("Đăng nhập thành công!", "success");
+            checkLoginState();
+            syncData();
+        } else {
+            showToast(resData.message || "Sai tài khoản hoặc mật khẩu!", "error");
+        }
+    } catch (err) {
+        console.error("Login fetch error:", err);
+        // Offline/Fallback check to ensure client is not locked out when offline
+        if (userVal === "camdo86" && passVal === "Tiemcamdo86@123") {
+            sessionStorage.setItem('pawnshop_logged_in', 'true');
+            sessionStorage.setItem('pawnshop_username', userVal);
+            sessionStorage.setItem('pawnshop_password', passVal);
+            showToast("Đăng nhập offline thành công!", "success");
+            checkLoginState();
+            syncData();
+        } else {
+            showToast("Không thể kết nối đến máy chủ xác thực. Hãy thử lại!", "error");
+        }
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -347,10 +391,12 @@ async function syncData(isSilent = false) {
         // Thêm tham số _t=timestamp để tránh trình duyệt cache request HTTP GET. Nếu làm mới bằng tay, thêm clean=true.
         let fetchUrl = gasUrl;
         const separator = fetchUrl.indexOf('?') > -1 ? '&' : '?';
+        const passwordParam = sessionStorage.getItem('pawnshop_password') || "";
+        
         if (isSilent) {
-            fetchUrl += `${separator}_t=${Date.now()}`;
+            fetchUrl += `${separator}_t=${Date.now()}&password=${encodeURIComponent(passwordParam)}`;
         } else {
-            fetchUrl += `${separator}clean=true&_t=${Date.now()}`;
+            fetchUrl += `${separator}clean=true&_t=${Date.now()}&password=${encodeURIComponent(passwordParam)}`;
         }
         const response = await fetch(fetchUrl);
         const resData = await response.json();
@@ -405,6 +451,9 @@ async function syncData(isSilent = false) {
 async function postToAPI(payload) {
     if (isDemoMode) return { success: true };
     try {
+        // Đính kèm mật khẩu vào payload để xác thực ghi dữ liệu
+        payload.password = sessionStorage.getItem('pawnshop_password') || "";
+        
         const response = await fetch(gasUrl, {
             method: 'POST',
             mode: 'no-cors',
