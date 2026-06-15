@@ -7,7 +7,7 @@ let state = {
 // Mode & Status
 let isDemoMode = false;
 let isSubmitting = false;
-let gasUrl = localStorage.getItem('pawnshop_gas_url') || "https://script.google.com/macros/s/AKfycbwlY9lyJBbdPF9sZ9DkFNMnUavto77nxxgBcJzWXe3GcWby8cQYnsuxhuK0kh2Xu42BeA/exec";
+let gasUrl = localStorage.getItem('pawnshop_gas_url') || "https://script.google.com/macros/s/AKfycbwIY9lyJBbdPF9sZ9DkFNMnUavto77nxxgBcJzWXe3GcWby8cQYnsuxhuK0kh2Xu42BeA/exec";
 
 // Dummy/Demo Data to show when offline or first time
 const dummyContracts = [
@@ -54,13 +54,13 @@ const dummyHistory = [
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Check Login
     checkLoginState();
-    
+
     // Load saved theme
     const savedTheme = localStorage.getItem('pawnshop_theme');
     const root = document.documentElement;
     const icon = document.getElementById('theme-toggle-icon');
     const text = document.getElementById('theme-toggle-text');
-    
+
     if (savedTheme === 'light') {
         root.classList.add('theme-light');
         if (icon) icon.className = "fa-solid fa-moon";
@@ -70,16 +70,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (icon) icon.className = "fa-solid fa-sun";
         if (text) text.innerText = "Giao diện sáng";
     }
-    
+
     // 2. Setup input elements & forms
     if (document.getElementById('contract-date')) {
         document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
     }
-    
+
     // Set initially active tab link style
     const initialTab = 'new-contract';
     switchTab(initialTab);
-    
+
     // 3. Form input change listeners for Live Preview
     const formFields = ['customer-name', 'customer-phone', 'customer-cccd', 'asset-type', 'asset-detail', 'loan-amount-input', 'contract-date'];
     formFields.forEach(id => {
@@ -89,19 +89,19 @@ document.addEventListener("DOMContentLoaded", () => {
             el.addEventListener('change', updateReceiptPreview);
         }
     });
-    
+
     // Format currency inputs on focus/blur to prevent Gboard duplication/IME issues entirely while keeping live preview updates
     const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input', 'modal-edit-amount-input', 'modal-direct-capital', 'modal-direct-profit'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             // On focus: strip all formatting commas so the user types a clean raw number
-            el.addEventListener('focus', function() {
+            el.addEventListener('focus', function () {
                 this.value = this.value.replace(/\D/g, '');
             });
 
             // On input: clean non-digit chars if any (e.g. from copy-pasting)
-            el.addEventListener('input', function() {
+            el.addEventListener('input', function () {
                 const clean = this.value.replace(/\D/g, '');
                 if (this.value !== clean) {
                     this.value = clean;
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             // On blur: format with commas for a polished display
-            el.addEventListener('blur', function() {
+            el.addEventListener('blur', function () {
                 const clean = this.value.replace(/\D/g, '');
                 if (clean !== "") {
                     const parsed = parseInt(clean, 10);
@@ -122,18 +122,18 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     });
-    
+
     // 4. Form Submit Handlers
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
-    
+
     const newContractForm = document.getElementById('new-contract-form');
     if (newContractForm) {
         newContractForm.addEventListener('submit', handleCreateContract);
     }
-    
+
     const payInterestForm = document.getElementById('pay-interest-form');
     if (payInterestForm) {
         payInterestForm.addEventListener('submit', handlePayInterest);
@@ -143,35 +143,35 @@ document.addEventListener("DOMContentLoaded", () => {
     if (directPaymentForm) {
         directPaymentForm.addEventListener('submit', handleDirectPayment);
     }
-    
+
     const closeContractForm = document.getElementById('close-contract-form');
     if (closeContractForm) {
         closeContractForm.addEventListener('submit', handleCloseContract);
     }
-    
+
     const liquidateContractForm = document.getElementById('liquidate-contract-form');
     if (liquidateContractForm) {
         liquidateContractForm.addEventListener('submit', handleLiquidateContract);
     }
-    
+
     const editContractForm = document.getElementById('edit-contract-form');
     if (editContractForm) {
         editContractForm.addEventListener('submit', handleEditContract);
     }
-    
+
     const settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
         settingsForm.addEventListener('submit', handleSaveSettings);
     }
-    
+
     // 5. Initialize settings fields
     if (document.getElementById('setting-gas-url')) {
         document.getElementById('setting-gas-url').value = gasUrl;
     }
-    
+
     // 6. Load QR code thành base64 cache cho PDF export
     loadQRBase64();
-    
+
     // 7. Refresh data
     syncData(true);
 });
@@ -188,7 +188,7 @@ function loadQRBase64() {
             // Fallback: convert qr.jpg sang base64
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            img.onload = function() {
+            img.onload = function () {
                 const canvas = document.createElement('canvas');
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
@@ -197,21 +197,21 @@ function loadQRBase64() {
                 try {
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
                     window._qrBase64Cache = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
-                } catch(e) {
+                } catch (e) {
                     window._qrBase64Cache = '';
                 }
             };
-            img.onerror = function() { window._qrBase64Cache = ''; };
+            img.onerror = function () { window._qrBase64Cache = ''; };
             img.src = 'qr.jpg';
         });
 }
 
 function checkLoginState() {
     const isLoggedIn = sessionStorage.getItem('pawnshop_logged_in') === 'true';
-    
+
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
-    
+
     if (isLoggedIn) {
         loginScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
@@ -225,7 +225,7 @@ function handleLogin(e) {
     e.preventDefault();
     const userVal = document.getElementById('username').value.trim();
     const passVal = document.getElementById('password').value;
-    
+
     if (userVal === "camdo86" && passVal === "Tiemcamdo86@123") {
         sessionStorage.setItem('pawnshop_logged_in', 'true');
         showToast("Đăng nhập thành công!", "success");
@@ -282,7 +282,7 @@ function handleSaveSettings(e) {
 function updateDatabaseStatus() {
     const badge = document.getElementById('mode-badge');
     const statusText = document.getElementById('db-status');
-    
+
     if (gasUrl) {
         isDemoMode = false;
         if (badge) {
@@ -309,12 +309,12 @@ function updateDatabaseStatus() {
 // ==================== DATA SYNCING ====================
 async function syncData(isSilent = false) {
     updateDatabaseStatus();
-    
+
     // Check if we have cached data locally
     let localContracts = localStorage.getItem('pawnshop_contracts');
     let localHistory = localStorage.getItem('pawnshop_history');
     let hasCache = !!(localContracts || localHistory);
-    
+
     // If cache exists, load and render it immediately for perceived instant speed (SWR)
     if (hasCache) {
         state.contracts = localContracts ? JSON.parse(localContracts) : [];
@@ -328,7 +328,7 @@ async function syncData(isSilent = false) {
         localStorage.setItem('pawnshop_history', JSON.stringify(dummyHistory));
         renderAll();
     }
-    
+
     // Show spinner if we want active feedback and there is no cache to show,
     // or if we specifically demand a foreground refresh (isSilent = false)
     if (!isSilent && !hasCache) {
@@ -337,12 +337,12 @@ async function syncData(isSilent = false) {
         // If it is manual sync and we already have cache rendered, show a friendly silent notification
         showToast("Đang đồng bộ dữ liệu mới...", "info");
     }
-    
+
     if (isDemoMode) {
         if (!isSilent) showLoading(false);
         return;
     }
-    
+
     try {
         // Thêm tham số _t=timestamp để tránh trình duyệt cache request HTTP GET. Nếu làm mới bằng tay, thêm clean=true.
         let fetchUrl = gasUrl;
@@ -354,28 +354,28 @@ async function syncData(isSilent = false) {
         }
         const response = await fetch(fetchUrl);
         const resData = await response.json();
-        
+
         if (resData.success) {
             const newContracts = resData.data.contracts || [];
             const newHistory = resData.data.history || [];
-            
+
             // Check if backend data differs from local cache
             const hasChanges = JSON.stringify(newContracts) !== JSON.stringify(state.contracts) ||
-                               JSON.stringify(newHistory) !== JSON.stringify(state.history);
-            
+                JSON.stringify(newHistory) !== JSON.stringify(state.history);
+
             if (hasChanges || !hasCache) {
                 state.contracts = newContracts;
                 state.history = newHistory;
-                
+
                 localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
                 localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
-                
+
                 renderAll();
                 if (!isSilent) showToast("Đồng bộ thành công!", "success");
             } else {
                 if (!isSilent) showToast("Dữ liệu đã ở bản mới nhất!", "success");
             }
-            
+
             console.log("=== DANH SÁCH HỢP ĐỒNG ĐÃ ĐỒNG BỘ ===");
             state.contracts.forEach(c => {
                 console.log(`Mã HĐ: ${c.Ma_HD} | Khách: ${c.Ten_Khach_Hang} | Hinh_Anh:`, c.Hinh_Anh ? c.Hinh_Anh.substring(0, 100) + (c.Hinh_Anh.length > 100 ? "..." : "") : "Trống");
@@ -388,7 +388,7 @@ async function syncData(isSilent = false) {
         if (!isSilent) {
             showToast("Lỗi kết nối API Google Sheets. Đang dùng dữ liệu cache offline.", "error");
         }
-        
+
         // If fetch fails and we didn't have cache before, try loading whatever is there
         if (!hasCache) {
             let localContractsFallback = localStorage.getItem('pawnshop_contracts') || "[]";
@@ -424,7 +424,7 @@ async function postToAPI(payload) {
 function calculateInterest(principal, assetType, days) {
     // Treat 0 days (or negative days) as 1 day so that the minimum interest rate tier is applied immediately.
     const calcDays = Math.max(1, days);
-    
+
     if (assetType === 'Honda') {
         // Khung 1-3tr: Tính tiền lãi cố định
         if (principal <= 3000000) {
@@ -446,7 +446,7 @@ function calculateInterest(principal, assetType, days) {
                 return interest;
             }
         }
-        
+
         // Các khung tính theo % gốc
         let rateSchedule = [];
         if (principal <= 4000000) {
@@ -483,16 +483,16 @@ function calculateInterest(principal, assetType, days) {
                 { days: 30, rate: 0.060 }
             ];
         }
-        
+
         const getRate = (d) => {
             for (const tier of rateSchedule) {
                 if (d <= tier.days) return tier.rate;
             }
             return rateSchedule[rateSchedule.length - 1].rate;
         };
-        
+
         const maxRate = rateSchedule[rateSchedule.length - 1].rate;
-        
+
         if (calcDays <= 30) {
             return principal * getRate(calcDays);
         } else {
@@ -513,20 +513,20 @@ function calculateInterest(principal, assetType, days) {
 function getContractStats(contract) {
     const loanDate = new Date(contract.Ngay_Cam);
     const currentDate = new Date();
-    
+
     loanDate.setHours(0, 0, 0, 0);
     currentDate.setHours(0, 0, 0, 0);
-    
+
     const diffTime = Math.max(0, currentDate - loanDate);
     const elapsedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     const principal = parseFloat(contract.So_Tien_Cam) || 0;
     const accrued = calculateInterest(principal, contract.Loai_Tai_San, elapsedDays);
-    
+
     const collected = state.history
         .filter(item => item.Ma_HD === contract.Ma_HD && !item.Ghi_Chu.includes("Chuộc đồ"))
         .reduce((sum, item) => sum + (parseFloat(item.So_Tien_Dong) || 0), 0);
-        
+
     return {
         days: elapsedDays,
         accrued: Math.round(accrued),
@@ -539,11 +539,11 @@ function getUnpaidDays(contract, stats) {
     const principal = parseFloat(contract.So_Tien_Cam) || 0;
     const elapsedDays = stats.days;
     const collected = stats.collected;
-    
+
     if (stats.accrued <= collected) {
         return 0;
     }
-    
+
     let paidUpToDay = 0;
     for (let d = 0; d <= elapsedDays; d++) {
         const interestAtD = calculateInterest(principal, contract.Loai_Tai_San, d);
@@ -627,21 +627,21 @@ function updateStatElement(id, value) {
 
 function renderDashboard() {
     const active = state.contracts.filter(c => c.Trang_Thai === 'Active');
-    
+
     let totalPrincipal = 0;
     let totalAccrued = 0;
     let totalCollected = 0;
-    
+
     active.forEach(c => {
         totalPrincipal += parseFloat(c.So_Tien_Cam) || 0;
         const stats = getContractStats(c);
         totalAccrued += stats.accrued;
     });
-    
+
     state.history.forEach(item => {
         totalCollected += parseFloat(item.So_Tien_Dong) || 0;
     });
-    
+
     updateStatElement('stat-active-count', active.length);
     updateStatElement('stat-total-principal', formatVND(totalPrincipal));
     updateStatElement('stat-accrued-interest', formatVND(totalAccrued));
@@ -652,12 +652,12 @@ function renderActiveContracts() {
     const container = document.getElementById('active-contracts-grid');
     const emptyState = document.getElementById('active-empty-state');
     if (!container) return;
-    
+
     container.innerHTML = "";
-    
+
     // Read status filter
     const filterStatus = document.getElementById('filter-status')?.value || 'Active';
-    
+
     let filteredList = state.contracts;
     if (filterStatus === 'Active') {
         filteredList = state.contracts.filter(c => c.Trang_Thai === 'Active');
@@ -670,22 +670,22 @@ function renderActiveContracts() {
     } else {
         // 'All' - no filter, shows all
     }
-    
+
     if (filteredList.length === 0) {
         emptyState.classList.remove('hidden');
         return;
     }
     emptyState.classList.add('hidden');
-    
+
     filteredList.forEach(c => {
         const stats = getContractStats(c);
         const card = document.createElement('div');
-        
+
         const isClosed = c.Trang_Thai === 'Closed';
         const isLiquidating = c.Trang_Thai === 'Liquidating';
         const isLiquidated = c.Trang_Thai === 'Liquidated';
         const isTerminal = isClosed || isLiquidated;
-        
+
         let statusBadge = "";
         if (isClosed) {
             statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`;
@@ -696,12 +696,12 @@ function renderActiveContracts() {
         } else {
             statusBadge = `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
         }
-            
+
         card.className = `glass-card p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 ${isTerminal ? 'opacity-60 hover:opacity-100' : ''}`;
         card.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
         card.dataset.assetType = c.Loai_Tai_San;
         card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
-        
+
         // Dynamic badge style based on Loai_Tai_San
         let assetBadgeClass = "bg-slate-500/15 text-slate-300 border border-slate-500/30";
         if (c.Loai_Tai_San === 'Honda') {
@@ -729,7 +729,7 @@ function renderActiveContracts() {
                 const isHonda = c.Loai_Tai_San === 'Honda';
                 const limitDue = isHonda ? 20 : 5;
                 const limitOverdue = isHonda ? 30 : 7;
-                
+
                 if (unpaidDays === 0 || unpaidDays <= limitDue) {
                     paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Bình thường</span>`;
                     daysColorClass = "text-emerald-400";
@@ -768,7 +768,7 @@ function renderActiveContracts() {
                 `;
             }
         }
-        
+
         let buttonsHtml = "";
         if (isTerminal) {
             buttonsHtml = `
@@ -789,9 +789,9 @@ function renderActiveContracts() {
                 </button>
             `;
         }
-        
+
         let contractCodeDisplay = isTerminal ? `<span class="text-xs text-slate-500 font-semibold ml-1">${c.Ma_HD}</span>` : "";
-        
+
         card.innerHTML = `
             <div class="space-y-4">
                 <!-- Card Header & Customer Info -->
@@ -874,7 +874,7 @@ function renderActiveContracts() {
         `;
         container.appendChild(card);
     });
-    
+
     // Auto-apply search and asset filters
     filterActiveContracts();
 }
@@ -882,29 +882,29 @@ function renderActiveContracts() {
 function handleRePawn(hdId) {
     const contract = state.contracts.find(c => c.Ma_HD === hdId);
     if (!contract) return;
-    
+
     // Switch to new contract tab
     switchTab('new-contract');
-    
+
     // Prefill form values
     document.getElementById('customer-name').value = contract.Ten_Khach_Hang;
     document.getElementById('customer-phone').value = contract.So_Dien_Thoai;
     document.getElementById('customer-cccd').value = contract.So_CCCD || "";
     document.getElementById('asset-type').value = contract.Loai_Tai_San;
-    
+
     // Run updateAssetPlaceholders to ensure correct placeholder is set
     updateAssetPlaceholders();
-    
+
     document.getElementById('asset-detail').value = contract.Chi_Tiet_Tai_San;
     document.getElementById('loan-amount-input').value = formatNumber(contract.So_Tien_Cam);
     document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('contract-notes').value = contract.Ghi_Chu || "";
-    
+
     // Handle image copying
     if (contract.Hinh_Anh) {
         uploadedImageBase64 = contract.Hinh_Anh;
         document.getElementById('upload-placeholder').classList.add('hidden');
-        
+
         const previewContainer = document.getElementById('image-upload-preview-container');
         const previewImg = document.getElementById('image-upload-preview');
         previewImg.src = formatImageUrl(contract.Hinh_Anh);
@@ -917,12 +917,12 @@ function handleRePawn(hdId) {
         uploadedCccdFrontBase64 = contract.Hinh_CCCD_Truoc;
         const placeholder = document.getElementById('cccd-front-upload-placeholder');
         if (placeholder) placeholder.classList.add('hidden');
-        
+
         const previewContainer = document.getElementById('cccd-front-image-upload-preview-container');
         const previewImg = document.getElementById('cccd-front-image-upload-preview');
         if (previewImg) previewImg.src = formatImageUrl(contract.Hinh_CCCD_Truoc);
         if (previewContainer) previewContainer.classList.remove('hidden');
-        
+
         const receiptCccdImg = document.getElementById('preview-cccd-front-img');
         const receiptCccdIcon = document.getElementById('preview-cccd-front-icon');
         if (receiptCccdImg) {
@@ -938,12 +938,12 @@ function handleRePawn(hdId) {
         uploadedCccdBackBase64 = contract.Hinh_CCCD_Sau;
         const placeholder = document.getElementById('cccd-back-upload-placeholder');
         if (placeholder) placeholder.classList.add('hidden');
-        
+
         const previewContainer = document.getElementById('cccd-back-image-upload-preview-container');
         const previewImg = document.getElementById('cccd-back-image-upload-preview');
         if (previewImg) previewImg.src = formatImageUrl(contract.Hinh_CCCD_Sau);
         if (previewContainer) previewContainer.classList.remove('hidden');
-        
+
         const receiptCccdImg = document.getElementById('preview-cccd-back-img');
         const receiptCccdIcon = document.getElementById('preview-cccd-back-icon');
         if (receiptCccdImg) {
@@ -954,10 +954,10 @@ function handleRePawn(hdId) {
     } else {
         clearUploadedImage(null, 'cccd-back');
     }
-    
+
     // Update live preview layout
     updateReceiptPreview();
-    
+
     showToast(`Đã lấy thông tin từ HĐ cũ (${hdId})!`, "success");
 }
 
@@ -965,17 +965,17 @@ function renderPaymentHistory() {
     const tableBody = document.getElementById('history-table-body');
     const emptyState = document.getElementById('history-empty-state');
     if (!tableBody) return;
-    
+
     tableBody.innerHTML = "";
-    
+
     if (state.history.length === 0) {
         emptyState.classList.remove('hidden');
         return;
     }
     emptyState.classList.add('hidden');
-    
+
     const sorted = [...state.history].sort((a, b) => b.Ma_Giao_Dich.localeCompare(a.Ma_Giao_Dich));
-    
+
     sorted.forEach(item => {
         const row = document.createElement('tr');
         row.className = "hover:bg-slate-800/30 transition duration-150 border-b border-slate-800/80";
@@ -999,36 +999,36 @@ function renderStatistics() {
     const active = state.contracts.filter(c => c.Trang_Thai === 'Active');
     const activeCount = active.length;
     const totalCapital = active.reduce((sum, c) => sum + (parseFloat(c.So_Tien_Cam) || 0), 0);
-    
+
     // Liquidating calculations
     const liquidating = state.contracts.filter(c => c.Trang_Thai === 'Liquidating');
     const liquidatingCount = liquidating.length;
     const liquidatingCapital = liquidating.reduce((sum, c) => sum + (parseFloat(c.So_Tien_Cam) || 0), 0);
-    
+
     // Liquidated / Capital recovered calculations
     const liquidated = state.contracts.filter(c => c.Trang_Thai === 'Liquidated');
     const liquidatedCount = liquidated.length;
-    
+
     let totalRecovered = 0;
     state.history.forEach(item => {
         if (item.Ghi_Chu.includes("Thanh lý tài sản thu hồi vốn")) {
             totalRecovered += parseFloat(item.So_Tien_Dong) || 0;
         }
     });
-    
+
     const startOfWeek = getStartOfWeek();
     const startOfMonth = getStartOfMonth();
-    
+
     let weekInterest = 0;
     let monthInterest = 0;
-    
+
     state.history.forEach(item => {
         if (!item.Ngay_Dong_Lai) return;
         const txDate = new Date(item.Ngay_Dong_Lai);
         txDate.setHours(0, 0, 0, 0);
-        
+
         const interestAmount = getInterestFromTransaction(item);
-        
+
         if (txDate >= startOfWeek) {
             weekInterest += interestAmount;
         }
@@ -1054,12 +1054,12 @@ function renderStatistics() {
     // Tính toán vốn và lời của giao dịch thu ngoài (THU_NGOAI)
     let directCapitalTotal = 0;
     let directProfitTotal = 0;
-    
+
     state.history.forEach(item => {
         if (item.Ma_HD === "THU_NGOAI") {
             const capitalMatch = item.Ghi_Chu.match(/Vốn:\s*([\d,.]+)/);
             const profitMatch = item.Ghi_Chu.match(/Lời:\s*([\d,.]+)/);
-            
+
             if (capitalMatch) {
                 const capVal = parseFloat(capitalMatch[1].replace(/,/g, '')) || 0;
                 directCapitalTotal += capVal;
@@ -1070,7 +1070,7 @@ function renderStatistics() {
             }
         }
     });
-    
+
     const tabActiveCountEl = document.getElementById('stat-tab-active-count');
     const tabTotalCapitalEl = document.getElementById('stat-tab-total-capital');
     const tabWeekInterestEl = document.getElementById('stat-tab-week-interest');
@@ -1083,7 +1083,7 @@ function renderStatistics() {
     const tabLiquidatedCountEl = document.getElementById('stat-tab-liquidated-count');
     const tabDirectCapitalEl = document.getElementById('stat-tab-direct-capital');
     const tabDirectProfitEl = document.getElementById('stat-tab-direct-profit');
-    
+
     if (tabActiveCountEl) tabActiveCountEl.innerText = activeCount;
     if (tabTotalCapitalEl) tabTotalCapitalEl.innerText = formatVND(totalCapital);
     if (tabWeekInterestEl) tabWeekInterestEl.innerText = formatVND(weekInterest);
@@ -1096,16 +1096,16 @@ function renderStatistics() {
     if (tabLiquidatedCountEl) tabLiquidatedCountEl.innerText = `Từ ${liquidatedCount} hợp đồng đã thanh lý`;
     if (tabDirectCapitalEl) tabDirectCapitalEl.innerText = formatVND(directCapitalTotal);
     if (tabDirectProfitEl) tabDirectProfitEl.innerText = formatVND(directProfitTotal);
-    
+
     const assetBody = document.getElementById('stat-asset-table-body');
     if (assetBody) {
         assetBody.innerHTML = "";
         const categories = ["Honda", "Điện thoại", "Laptop", "iPad"];
-        
+
         categories.forEach(cat => {
             const catContracts = active.filter(c => c.Loai_Tai_San === cat);
             const catCapital = catContracts.reduce((sum, c) => sum + (parseFloat(c.So_Tien_Cam) || 0), 0);
-            
+
             const tr = document.createElement('tr');
             tr.className = "hover:bg-slate-800/20 border-b border-slate-800/50 transition duration-150";
             tr.innerHTML = `
@@ -1116,18 +1116,18 @@ function renderStatistics() {
             assetBody.appendChild(tr);
         });
     }
-    
+
     const recentPaymentsBody = document.getElementById('stat-recent-payments-body');
     if (recentPaymentsBody) {
         recentPaymentsBody.innerHTML = "";
-        
+
         const currentMonthTxs = state.history.filter(item => {
             if (!item.Ngay_Dong_Lai) return false;
             const txDate = new Date(item.Ngay_Dong_Lai);
             txDate.setHours(0, 0, 0, 0);
             return txDate >= startOfMonth;
         }).sort((a, b) => b.Ngay_Dong_Lai.localeCompare(a.Ngay_Dong_Lai));
-        
+
         if (currentMonthTxs.length === 0) {
             recentPaymentsBody.innerHTML = `
                 <tr>
@@ -1170,7 +1170,7 @@ function updateReceiptPreview() {
     const rawAmount = document.getElementById('loan-amount-input').value.replace(/,/g, '');
     const amountVal = parseFloat(rawAmount) || 0;
     const dateVal = document.getElementById('contract-date').value || new Date().toISOString().split('T')[0];
-    
+
     const active = state.contracts;
     let nextId = "HD0001";
     if (active.length > 0) {
@@ -1178,7 +1178,7 @@ function updateReceiptPreview() {
         const maxId = Math.max(...ids);
         nextId = "HD" + String(maxId + 1).padStart(4, "0");
     }
-    
+
     document.getElementById('preview-id').innerText = nextId;
     document.getElementById('preview-name').innerText = name;
     document.getElementById('preview-phone').innerText = phone;
@@ -1186,16 +1186,16 @@ function updateReceiptPreview() {
     document.getElementById('preview-asset-type').innerText = assetType;
     document.getElementById('preview-asset-detail').innerText = assetDetail;
     document.getElementById('preview-date').innerText = formatDateToDMY(dateVal);
-    
+
     const previewDetailLabel = document.getElementById('preview-asset-detail-label');
     if (previewDetailLabel) {
         previewDetailLabel.innerText = assetType === 'Honda' ? "Biển số xe:" : "Chi tiết thiết bị:";
     }
-    
+
     document.getElementById('preview-amount').innerText = formatNumber(amountVal);
     document.getElementById('preview-amount-words').innerText = numberToWords(amountVal).toUpperCase();
     document.getElementById('preview-signature-name').innerText = name !== "Chưa nhập" ? name : ".................";
-    
+
     const noteEl = document.getElementById('preview-interest-note');
     if (noteEl) {
         if (assetType === 'Honda') {
@@ -1204,7 +1204,7 @@ function updateReceiptPreview() {
             noteEl.innerText = "Chu kỳ 14 ngày";
         }
     }
-    
+
     const termsEl = document.getElementById('preview-terms-note');
     if (termsEl) {
         if (assetType === 'Honda') {
@@ -1219,7 +1219,7 @@ function updateAssetPlaceholders() {
     const type = document.getElementById('asset-type').value;
     const label = document.getElementById('asset-detail-label');
     const input = document.getElementById('asset-detail');
-    
+
     if (type === 'Honda') {
         label.innerHTML = `Biển Số Xe <span class="text-red-500">*</span>`;
         input.placeholder = "Ví dụ: 29X1-12345";
@@ -1242,20 +1242,20 @@ let editUploadedCccdBackBase64 = "";
 function previewUploadImage(input, type = 'asset') {
     const file = input.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const rawBase64 = e.target.result;
-        
+
         const img = new Image();
         img.src = rawBase64;
-        img.onload = function() {
+        img.onload = function () {
             const canvas = document.createElement('canvas');
             const MAX_WIDTH = 500;
             const MAX_HEIGHT = 500;
             let width = img.width;
             let height = img.height;
-            
+
             if (width > height) {
                 if (width > MAX_WIDTH) {
                     height *= MAX_WIDTH / width;
@@ -1267,25 +1267,25 @@ function previewUploadImage(input, type = 'asset') {
                     height = MAX_HEIGHT;
                 }
             }
-            
+
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            
+
             const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            
+
             if (type === 'cccd-front') {
                 uploadedCccdFrontBase64 = compressedBase64;
-                
+
                 const placeholder = document.getElementById('cccd-front-upload-placeholder');
                 if (placeholder) placeholder.classList.add('hidden');
-                
+
                 const previewContainer = document.getElementById('cccd-front-image-upload-preview-container');
                 const previewImg = document.getElementById('cccd-front-image-upload-preview');
                 if (previewImg) previewImg.src = uploadedCccdFrontBase64;
                 if (previewContainer) previewContainer.classList.remove('hidden');
-                
+
                 // Update live preview
                 const receiptCccdImg = document.getElementById('preview-cccd-front-img');
                 const receiptCccdIcon = document.getElementById('preview-cccd-front-icon');
@@ -1294,19 +1294,19 @@ function previewUploadImage(input, type = 'asset') {
                     receiptCccdImg.classList.remove('hidden');
                 }
                 if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
-                
+
                 showToast("Ảnh CCCD mặt trước tải lên thành công!", "info");
             } else if (type === 'cccd-back') {
                 uploadedCccdBackBase64 = compressedBase64;
-                
+
                 const placeholder = document.getElementById('cccd-back-upload-placeholder');
                 if (placeholder) placeholder.classList.add('hidden');
-                
+
                 const previewContainer = document.getElementById('cccd-back-image-upload-preview-container');
                 const previewImg = document.getElementById('cccd-back-image-upload-preview');
                 if (previewImg) previewImg.src = uploadedCccdBackBase64;
                 if (previewContainer) previewContainer.classList.remove('hidden');
-                
+
                 // Update live preview
                 const receiptCccdImg = document.getElementById('preview-cccd-back-img');
                 const receiptCccdIcon = document.getElementById('preview-cccd-back-icon');
@@ -1315,55 +1315,55 @@ function previewUploadImage(input, type = 'asset') {
                     receiptCccdImg.classList.remove('hidden');
                 }
                 if (receiptCccdIcon) receiptCccdIcon.classList.add('hidden');
-                
+
                 showToast("Ảnh CCCD mặt sau tải lên thành công!", "info");
             } else if (type === 'edit-cccd-front') {
                 editUploadedCccdFrontBase64 = compressedBase64;
-                
+
                 const placeholder = document.getElementById('modal-edit-cccd-front-upload-placeholder');
                 if (placeholder) placeholder.classList.add('hidden');
-                
+
                 const previewContainer = document.getElementById('modal-edit-cccd-front-image-upload-preview-container');
                 const previewImg = document.getElementById('modal-edit-cccd-front-image-upload-preview');
                 if (previewImg) previewImg.src = editUploadedCccdFrontBase64;
                 if (previewContainer) previewContainer.classList.remove('hidden');
-                
+
                 showToast("Ảnh CCCD mặt trước tải lên thành công!", "info");
             } else if (type === 'edit-cccd-back') {
                 editUploadedCccdBackBase64 = compressedBase64;
-                
+
                 const placeholder = document.getElementById('modal-edit-cccd-back-upload-placeholder');
                 if (placeholder) placeholder.classList.add('hidden');
-                
+
                 const previewContainer = document.getElementById('modal-edit-cccd-back-image-upload-preview-container');
                 const previewImg = document.getElementById('modal-edit-cccd-back-image-upload-preview');
                 if (previewImg) previewImg.src = editUploadedCccdBackBase64;
                 if (previewContainer) previewContainer.classList.remove('hidden');
-                
+
                 showToast("Ảnh CCCD mặt sau tải lên thành công!", "info");
             } else if (type === 'edit-asset') {
                 editUploadedImageBase64 = compressedBase64;
-                
+
                 const placeholder = document.getElementById('modal-edit-upload-placeholder');
                 if (placeholder) placeholder.classList.add('hidden');
-                
+
                 const previewContainer = document.getElementById('modal-edit-image-upload-preview-container');
                 const previewImg = document.getElementById('modal-edit-image-upload-preview');
                 if (previewImg) previewImg.src = editUploadedImageBase64;
                 if (previewContainer) previewContainer.classList.remove('hidden');
-                
+
                 showToast("Hình ảnh tài sản đã tải lên thành công!", "info");
             } else {
                 uploadedImageBase64 = compressedBase64;
-                
+
                 const placeholder = document.getElementById('upload-placeholder');
                 if (placeholder) placeholder.classList.add('hidden');
-                
+
                 const previewContainer = document.getElementById('image-upload-preview-container');
                 const previewImg = document.getElementById('image-upload-preview');
                 if (previewImg) previewImg.src = uploadedImageBase64;
                 if (previewContainer) previewContainer.classList.remove('hidden');
-                
+
                 showToast("Hình ảnh tài sản đã tải lên thành công!", "info");
             }
         };
@@ -1373,7 +1373,7 @@ function previewUploadImage(input, type = 'asset') {
 
 function clearUploadedImage(e, type = 'asset') {
     if (e) e.stopPropagation();
-    
+
     if (type === 'cccd-front') {
         document.getElementById('cccd-front-image').value = "";
         uploadedCccdFrontBase64 = "";
@@ -1383,7 +1383,7 @@ function clearUploadedImage(e, type = 'asset') {
         if (previewContainer) previewContainer.classList.add('hidden');
         const placeholder = document.getElementById('cccd-front-upload-placeholder');
         if (placeholder) placeholder.classList.remove('hidden');
-        
+
         // Update live preview
         const receiptCccdImg = document.getElementById('preview-cccd-front-img');
         const receiptCccdIcon = document.getElementById('preview-cccd-front-icon');
@@ -1401,7 +1401,7 @@ function clearUploadedImage(e, type = 'asset') {
         if (previewContainer) previewContainer.classList.add('hidden');
         const placeholder = document.getElementById('cccd-back-upload-placeholder');
         if (placeholder) placeholder.classList.remove('hidden');
-        
+
         // Update live preview
         const receiptCccdImg = document.getElementById('preview-cccd-back-img');
         const receiptCccdIcon = document.getElementById('preview-cccd-back-icon');
@@ -1453,14 +1453,14 @@ function clearUploadedImage(e, type = 'asset') {
 async function handleCreateContract(e) {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         const name = document.getElementById('customer-name').value.trim();
         const phone = document.getElementById('customer-phone').value.trim();
@@ -1471,7 +1471,7 @@ async function handleCreateContract(e) {
         const amountVal = parseFloat(rawAmount) || 0;
         const dateVal = document.getElementById('contract-date').value;
         const notes = document.getElementById('contract-notes').value.trim();
-        
+
         if (amountVal <= 0) {
             showToast("Số tiền cầm phải lớn hơn 0!", "error");
             if (submitBtn) {
@@ -1481,15 +1481,15 @@ async function handleCreateContract(e) {
             isSubmitting = false;
             return;
         }
-        
+
         showLoading(true, "Đang khởi tạo hợp đồng...");
-        
+
         let newHdId = "HD0001";
         if (state.contracts.length > 0) {
             const ids = state.contracts.map(c => parseInt(c.Ma_HD.replace("HD", "")) || 0);
             newHdId = "HD" + String(Math.max(...ids) + 1).padStart(4, "0");
         }
-        
+
         const payload = {
             action: "createContract",
             Ten_Khach_Hang: name,
@@ -1501,9 +1501,9 @@ async function handleCreateContract(e) {
             Ngay_Cam: dateVal,
             Ghi_Chu: notes
         };
-        
+
         const res = await postToAPI(payload);
-        
+
         if (res.success) {
             const newContract = {
                 Ma_HD: newHdId,
@@ -1520,34 +1520,34 @@ async function handleCreateContract(e) {
                 Hinh_CCCD_Truoc: uploadedCccdFrontBase64,
                 Hinh_CCCD_Sau: uploadedCccdBackBase64
             };
-            
+
             state.contracts.push(newContract);
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
-            
+
             document.getElementById('preview-id').innerText = newHdId;
-            
+
             showToast("Đang tải hóa đơn PDF...", "info");
-            
+
             // Chờ PDF render xong rồi mới reset form
             await exportReceiptToPDF(newHdId);
-            
+
             const formEl = document.getElementById('new-contract-form');
             if (formEl) formEl.reset();
             document.getElementById('contract-date').value = new Date().toISOString().split('T')[0];
-            
+
             // Save base64 variables for async upload before cleaning preview
             const imgBase64 = uploadedImageBase64;
             const cccdFrontBase64 = uploadedCccdFrontBase64;
             const cccdBackBase64 = uploadedCccdBackBase64;
-            
+
             clearUploadedImage(null, 'asset');
             clearUploadedImage(null, 'cccd-front');
             clearUploadedImage(null, 'cccd-back');
             updateReceiptPreview();
-            
+
             showToast("Tạo hợp đồng thành công!", "success");
             switchTab('active-contracts');
-            
+
             // Background uploading
             if (imgBase64 || cccdFrontBase64 || cccdBackBase64) {
                 showToast("Đang tải hình ảnh lên hệ thống chạy ngầm...", "info");
@@ -1584,7 +1584,7 @@ function uploadContractImagesBackground(hdId, imageBase64, cccdFrontBase64, cccd
         cccd_back_image_data: cccdBackBase64 || "",
         cccd_back_image_name: `cccd_back_${hdId}.jpg`
     };
-    
+
     postToAPI(payload).then(res => {
         if (res && res.success) {
             console.log(`Đã tải hình ảnh cho HĐ ${hdId} chạy ngầm thành công.`);
@@ -1603,12 +1603,12 @@ function openPayInterestModal(hdId, customerName, suggestedInterest) {
     document.getElementById('modal-pay-customer-name').value = customerName;
     document.getElementById('modal-pay-hd-display').innerText = hdId;
     document.getElementById('modal-pay-customer-display').innerText = customerName;
-    
+
     const suggestedVal = Math.max(0, suggestedInterest);
     document.getElementById('modal-pay-suggested').innerText = formatVND(suggestedVal);
     document.getElementById('modal-pay-amount-input').value = formatNumber(suggestedVal);
     document.getElementById('modal-pay-notes').value = "Đóng lãi định kỳ";
-    
+
     document.getElementById('pay-interest-modal').classList.remove('hidden');
 }
 
@@ -1619,21 +1619,21 @@ function closePayInterestModal() {
 async function handlePayInterest(e) {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         const hdId = document.getElementById('modal-pay-hd-id').value;
         const name = document.getElementById('modal-pay-customer-name').value;
         const rawAmount = document.getElementById('modal-pay-amount-input').value.replace(/,/g, '');
         const amountVal = parseFloat(rawAmount) || 0;
         const notes = document.getElementById('modal-pay-notes').value.trim();
-        
+
         if (amountVal <= 0) {
             showToast("Số tiền đóng phải lớn hơn 0!", "error");
             if (submitBtn) {
@@ -1643,15 +1643,15 @@ async function handlePayInterest(e) {
             isSubmitting = false;
             return;
         }
-        
+
         showLoading(true, "Đang xử lý đóng lãi...");
-        
+
         let newGdId = "GD0001";
         if (state.history.length > 0) {
             const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
             newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
         }
-        
+
         const payload = {
             action: "addPayment",
             Ma_HD: hdId,
@@ -1660,9 +1660,9 @@ async function handlePayInterest(e) {
             So_Tien_Dong: amountVal,
             Ghi_Chu: notes
         };
-        
+
         const res = await postToAPI(payload);
-        
+
         if (res.success) {
             const newPayment = {
                 Ma_Giao_Dich: newGdId,
@@ -1672,10 +1672,10 @@ async function handlePayInterest(e) {
                 So_Tien_Dong: amountVal,
                 Ghi_Chu: notes
             };
-            
+
             state.history.push(newPayment);
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
-            
+
             closePayInterestModal();
             showToast("Đã ghi nhận đóng lãi!", "success");
             switchTab('payment-history');
@@ -1704,7 +1704,7 @@ function openDirectPaymentModal() {
     document.getElementById('modal-direct-capital').value = "0";
     document.getElementById('modal-direct-profit').value = "0";
     document.getElementById('modal-direct-notes').value = "";
-    
+
     document.getElementById('direct-payment-modal').classList.remove('hidden');
 }
 
@@ -1715,14 +1715,14 @@ function closeDirectPaymentModal() {
 async function handleDirectPayment(e) {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         const dateVal = document.getElementById('modal-direct-date').value;
         const rawCapital = document.getElementById('modal-direct-capital').value.replace(/,/g, '');
@@ -1730,7 +1730,7 @@ async function handleDirectPayment(e) {
         const rawProfit = document.getElementById('modal-direct-profit').value.replace(/,/g, '');
         const profitVal = parseFloat(rawProfit) || 0;
         const userNotes = document.getElementById('modal-direct-notes').value.trim();
-        
+
         if (capitalVal < 0 || profitVal < 0) {
             showToast("Số tiền không được nhỏ hơn 0!", "error");
             if (submitBtn) {
@@ -1749,18 +1749,18 @@ async function handleDirectPayment(e) {
             isSubmitting = false;
             return;
         }
-        
+
         showLoading(true, "Đang xử lý giao dịch thu ngoài...");
-        
+
         let newGdId = "GD0001";
         if (state.history.length > 0) {
             const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
             newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
         }
-        
+
         // Structured note format: Thu ngoài | Vốn: [Vốn] | Lời: [Lời] | Ghi chú: [userNotes]
         const structuredNotes = `Thu ngoài | Vốn: ${formatNumber(capitalVal)}đ | Lời: ${formatNumber(profitVal)}đ${userNotes ? ' | Ghi chú: ' + userNotes : ''}`;
-        
+
         const payload = {
             action: "addPayment",
             Ma_HD: "THU_NGOAI",
@@ -1769,9 +1769,9 @@ async function handleDirectPayment(e) {
             So_Tien_Dong: profitVal, // Save profit as So_Tien_Dong so existing statistics automatically sum it
             Ghi_Chu: structuredNotes
         };
-        
+
         const res = await postToAPI(payload);
-        
+
         if (res.success) {
             const newPayment = {
                 Ma_Giao_Dich: newGdId,
@@ -1781,10 +1781,10 @@ async function handleDirectPayment(e) {
                 So_Tien_Dong: profitVal,
                 Ghi_Chu: structuredNotes
             };
-            
+
             state.history.push(newPayment);
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
-            
+
             closeDirectPaymentModal();
             showToast("Đã ghi nhận giao dịch thu ngoài thành công!", "success");
             switchTab('payment-history');
@@ -1810,17 +1810,17 @@ function openCloseContractModal(hdId, customerName, principal, suggestedInterest
     document.getElementById('modal-close-customer-name').value = customerName;
     document.getElementById('modal-close-hd-display').innerText = hdId;
     document.getElementById('modal-close-customer-display').innerText = customerName;
-    
+
     const principalVal = parseFloat(principal) || 0;
     const interestVal = Math.max(0, suggestedInterest);
     const totalVal = principalVal + interestVal;
-    
+
     document.getElementById('modal-close-principal').innerText = formatVND(principalVal);
     document.getElementById('modal-close-interest').innerText = formatVND(interestVal);
     document.getElementById('modal-close-total').innerText = formatVND(totalVal);
-    
+
     document.getElementById('modal-close-amount-input').value = formatNumber(totalVal);
-    
+
     document.getElementById('close-contract-modal').classList.remove('hidden');
 }
 
@@ -1831,20 +1831,20 @@ function closeCloseContractModal() {
 async function handleCloseContract(e) {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         const hdId = document.getElementById('modal-close-hd-id').value;
         const name = document.getElementById('modal-close-customer-name').value;
         const rawAmount = document.getElementById('modal-close-amount-input').value.replace(/,/g, '');
         const amountVal = parseFloat(rawAmount) || 0;
-        
+
         if (amountVal <= 0) {
             showToast("Số tiền đóng phải lớn hơn 0!", "error");
             if (submitBtn) {
@@ -1854,30 +1854,30 @@ async function handleCloseContract(e) {
             isSubmitting = false;
             return;
         }
-        
+
         showLoading(true, "Đang tất toán hợp đồng...");
-        
+
         const payload = {
             action: "closeContract",
             Ma_HD: hdId,
             Ten_Khach_Hang: name,
             So_Tien_Dong: amountVal
         };
-        
+
         const res = await postToAPI(payload);
-        
+
         if (res.success) {
             const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
             if (contractIdx > -1) {
                 state.contracts[contractIdx].Trang_Thai = "Closed";
             }
-            
+
             let newGdId = "GD0001";
             if (state.history.length > 0) {
                 const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
                 newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
             }
-            
+
             const newPayment = {
                 Ma_Giao_Dich: newGdId,
                 Ma_HD: hdId,
@@ -1886,12 +1886,12 @@ async function handleCloseContract(e) {
                 So_Tien_Dong: amountVal,
                 Ghi_Chu: "Tất toán hợp đồng (Chuộc đồ)"
             };
-            
+
             state.history.push(newPayment);
-            
+
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
-            
+
             closeCloseContractModal();
             showToast("Tất toán hợp đồng thành công!", "success");
             switchTab('payment-history');
@@ -1916,17 +1916,17 @@ async function handleCloseContract(e) {
 function filterActiveContracts() {
     const query = document.getElementById('search-active').value.toLowerCase().trim();
     const filterAsset = document.getElementById('filter-asset').value;
-    
+
     const cards = document.getElementById('active-contracts-grid').children;
     let visibleCount = 0;
-    
+
     for (let card of cards) {
         const searchText = card.dataset.searchText || "";
         const assetType = card.dataset.assetType || "";
-        
+
         const isAssetMatch = filterAsset === 'All' || assetType === filterAsset;
         const isSearchMatch = !query || searchText.includes(query);
-        
+
         if (isSearchMatch && isAssetMatch) {
             card.classList.remove('hidden');
             visibleCount++;
@@ -1934,7 +1934,7 @@ function filterActiveContracts() {
             card.classList.add('hidden');
         }
     }
-    
+
     const emptyState = document.getElementById('active-empty-state');
     if (visibleCount === 0) {
         emptyState.classList.remove('hidden');
@@ -1946,17 +1946,17 @@ function filterActiveContracts() {
 function filterHistory() {
     const query = document.getElementById('search-history').value.toLowerCase().trim();
     const dateVal = document.getElementById('history-date-filter').value;
-    
+
     const rows = document.getElementById('history-table-body').children;
     let visibleCount = 0;
-    
+
     for (let row of rows) {
         const searchText = row.dataset.searchText || "";
         const rowDate = row.dataset.date || "";
-        
+
         const isDateMatch = !dateVal || rowDate === dateVal;
         const isSearchMatch = !query || searchText.includes(query);
-        
+
         if (isSearchMatch && isDateMatch) {
             row.classList.remove('hidden');
             visibleCount++;
@@ -1964,7 +1964,7 @@ function filterHistory() {
             row.classList.add('hidden');
         }
     }
-    
+
     const emptyState = document.getElementById('history-empty-state');
     if (visibleCount === 0) {
         emptyState.classList.remove('hidden');
@@ -1982,9 +1982,9 @@ function clearHistoryDateFilter() {
 function openContractDetailsModal(hdId) {
     const contract = state.contracts.find(c => c.Ma_HD === hdId);
     if (!contract) return;
-    
+
     const stats = getContractStats(contract);
-    
+
     document.getElementById('detail-modal-hd-id').innerText = contract.Ma_HD;
     document.getElementById('detail-modal-name').innerText = contract.Ten_Khach_Hang;
     document.getElementById('detail-modal-phone').innerText = contract.So_Dien_Thoai;
@@ -1992,14 +1992,14 @@ function openContractDetailsModal(hdId) {
     document.getElementById('detail-modal-asset-type').innerText = contract.Loai_Tai_San;
     document.getElementById('detail-modal-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
     document.getElementById('detail-modal-date').innerText = contract.Ngay_Cam;
-    
+
     const statusEl = document.getElementById('detail-modal-status');
     if (contract.Trang_Thai === 'Active') {
         const unpaidDays = getUnpaidDays(contract, stats);
         const isHonda = contract.Loai_Tai_San === 'Honda';
         const limitDue = isHonda ? 20 : 5;
         const limitOverdue = isHonda ? 30 : 7;
-        
+
         if (unpaidDays === 0 || unpaidDays <= limitDue) {
             statusEl.innerText = 'Bình thường';
             statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
@@ -2020,16 +2020,16 @@ function openContractDetailsModal(hdId) {
         statusEl.innerText = 'Đã tất toán';
         statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700";
     }
-    
+
     document.getElementById('detail-modal-principal').innerText = formatVND(contract.So_Tien_Cam);
     document.getElementById('detail-modal-days').innerText = `${stats.days} ngày`;
     document.getElementById('detail-modal-accrued').innerText = formatVND(stats.accrued);
     document.getElementById('detail-modal-collected').innerText = formatVND(stats.collected);
     document.getElementById('detail-modal-remaining').innerText = formatVND(Math.max(0, stats.accrued - stats.collected));
-    
+
     const notesEl = document.getElementById('detail-modal-notes');
     notesEl.innerText = contract.Ghi_Chu ? contract.Ghi_Chu : "Chưa có ghi chú.";
-    
+
     const imgContainer = document.getElementById('detail-modal-image-container');
     if (contract.Hinh_Anh) {
         const displayUrl = formatImageUrl(contract.Hinh_Anh, 400);
@@ -2047,7 +2047,7 @@ function openContractDetailsModal(hdId) {
     } else {
         imgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh đính kèm</span>`;
     }
-    
+
     const cccdFrontImgContainer = document.getElementById('detail-modal-cccd-front-image-container');
     if (cccdFrontImgContainer) {
         if (contract.Hinh_CCCD_Truoc) {
@@ -2091,7 +2091,7 @@ function openContractDetailsModal(hdId) {
     const historyBody = document.getElementById('detail-modal-history-body');
     historyBody.innerHTML = "";
     const filteredHistory = state.history.filter(h => h.Ma_HD === hdId);
-    
+
     if (filteredHistory.length === 0) {
         historyBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 italic text-xs">Chưa có giao dịch đóng lãi nào.</td></tr>`;
     } else {
@@ -2107,33 +2107,33 @@ function openContractDetailsModal(hdId) {
             historyBody.appendChild(tr);
         });
     }
-    
+
     // Setup footer button callbacks
     document.getElementById('detail-modal-print-btn').onclick = () => printContractReceipt(hdId);
-    
+
     const payBtn = document.getElementById('detail-modal-pay-btn');
     const closeHdBtn = document.getElementById('detail-modal-close-contract-btn');
     const repawnBtn = document.getElementById('detail-modal-repawn-btn');
     const liquidateBtn = document.getElementById('detail-modal-liquidate-btn');
-    
+
     // Setup Edit button
     const editBtn = document.getElementById('detail-modal-edit-btn');
-    
+
     if (contract.Trang_Thai === 'Active' || contract.Trang_Thai === 'Liquidating') {
         payBtn.classList.remove('hidden');
         payBtn.onclick = () => {
             closeContractDetailsModal();
             openPayInterestModal(hdId, contract.Ten_Khach_Hang, stats.accrued - stats.collected);
         };
-        
+
         closeHdBtn.classList.remove('hidden');
         closeHdBtn.onclick = () => {
             closeContractDetailsModal();
             openCloseContractModal(hdId, contract.Ten_Khach_Hang, contract.So_Tien_Cam, stats.accrued - stats.collected);
         };
-        
+
         if (repawnBtn) repawnBtn.classList.add('hidden');
-        
+
         if (editBtn) {
             editBtn.classList.remove('hidden');
             editBtn.onclick = () => {
@@ -2141,7 +2141,7 @@ function openContractDetailsModal(hdId) {
                 openEditContractModal(hdId);
             };
         }
-        
+
         if (liquidateBtn) {
             liquidateBtn.classList.remove('hidden');
             liquidateBtn.onclick = () => {
@@ -2154,7 +2154,7 @@ function openContractDetailsModal(hdId) {
         closeHdBtn.classList.add('hidden');
         if (liquidateBtn) liquidateBtn.classList.add('hidden');
         if (editBtn) editBtn.classList.add('hidden');
-        
+
         if (repawnBtn) {
             repawnBtn.classList.remove('hidden');
             repawnBtn.onclick = () => {
@@ -2163,7 +2163,7 @@ function openContractDetailsModal(hdId) {
             };
         }
     }
-    
+
     document.getElementById('contract-details-modal').classList.remove('hidden');
 }
 
@@ -2175,21 +2175,21 @@ async function printContractReceipt(contractId) {
     if (isSubmitting) return;
     const contract = state.contracts.find(c => c.Ma_HD === contractId);
     if (!contract) return;
-    
+
     const printBtn = document.getElementById('detail-modal-print-btn');
     if (printBtn) {
         printBtn.disabled = true;
         printBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         // Temporarily overwrite receipt preview element
         document.getElementById('preview-id').innerText = contract.Ma_HD;
         document.getElementById('preview-name').innerText = contract.Ten_Khach_Hang;
         document.getElementById('preview-phone').innerText = contract.So_Dien_Thoai;
         document.getElementById('preview-cccd').innerText = contract.So_CCCD || 'CHƯA NHẬP';
-        
+
         const frontCccdImg = document.getElementById('preview-cccd-front-img');
         const frontCccdIcon = document.getElementById('preview-cccd-front-icon');
         if (contract.Hinh_CCCD_Truoc) {
@@ -2225,17 +2225,17 @@ async function printContractReceipt(contractId) {
         document.getElementById('preview-asset-type').innerText = contract.Loai_Tai_San;
         document.getElementById('preview-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
         document.getElementById('preview-date').innerText = formatDateToDMY(contract.Ngay_Cam);
-        
+
         const previewDetailLabel = document.getElementById('preview-asset-detail-label');
         if (previewDetailLabel) {
             previewDetailLabel.innerText = contract.Loai_Tai_San === 'Honda' ? "Biển số xe:" : "Chi tiết thiết bị:";
         }
-        
+
         const amountVal = parseFloat(contract.So_Tien_Cam) || 0;
         document.getElementById('preview-amount').innerText = formatNumber(amountVal);
         document.getElementById('preview-amount-words').innerText = numberToWords(amountVal).toUpperCase();
         document.getElementById('preview-signature-name').innerText = contract.Ten_Khach_Hang;
-        
+
         const noteEl = document.getElementById('preview-interest-note');
         if (noteEl) {
             if (contract.Loai_Tai_San === 'Honda') {
@@ -2244,7 +2244,7 @@ async function printContractReceipt(contractId) {
                 noteEl.innerText = "Chu kỳ 14 ngày";
             }
         }
-        
+
         const termsEl = document.getElementById('preview-terms-note');
         if (termsEl) {
             if (contract.Loai_Tai_San === 'Honda') {
@@ -2253,7 +2253,7 @@ async function printContractReceipt(contractId) {
                 termsEl.innerText = "Biên nhận này có giá trị 14 ngày. Nếu quá hạn 07 ngày, Quý khách không đến chuộc hoặc đóng lãi thì chúng tôi sẽ thanh lý món hàng cầm để thu hồi vốn. Mọi khiếu nại chúng tôi sẽ không giải quyết.";
             }
         }
-        
+
         showToast(`Đang xuất hóa đơn PDF cho hợp đồng ${contract.Ma_HD}...`, "info");
         await exportReceiptToPDF(contract.Ma_HD);
     } catch (error) {
@@ -2272,9 +2272,9 @@ async function printContractReceipt(contractId) {
 function switchTab(tabId) {
     const contents = document.querySelectorAll('.tab-content');
     contents.forEach(c => c.classList.add('hidden'));
-    
+
     document.getElementById(`tab-${tabId}-content`).classList.remove('hidden');
-    
+
     // Ẩn thanh thống kê ở tab Lập hợp đồng mới, hiện ở các tab khác
     const heroBanner = document.getElementById('dashboard-hero-banner');
     if (heroBanner) {
@@ -2284,9 +2284,9 @@ function switchTab(tabId) {
             heroBanner.classList.remove('hidden');
         }
     }
-    
+
     updateTabUI(tabId);
-    
+
     if (tabId === 'active-contracts') {
         const searchInput = document.getElementById('search-active');
         const filterSelect = document.getElementById('filter-asset');
@@ -2294,7 +2294,7 @@ function switchTab(tabId) {
         if (filterSelect) filterSelect.value = "All";
         filterActiveContracts();
     }
-    
+
     if (tabId === 'statistics') {
         renderStatistics();
     }
@@ -2305,17 +2305,17 @@ function updateTabUI(tabId) {
     tabBtns.forEach(btn => {
         btn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
     });
-    
+
     const activeBtn = document.getElementById(`nav-${tabId}`);
     if (activeBtn) {
         activeBtn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap bg-brand-500 text-white shadow-lg shadow-brand-500/20";
     }
-    
+
     const mobTabBtns = document.querySelectorAll('.mobile-tab-btn');
     mobTabBtns.forEach(btn => {
         btn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition duration-200";
     });
-    
+
     const activeMobBtn = document.getElementById(`mobile-nav-${tabId}`);
     if (activeMobBtn) {
         activeMobBtn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-brand-400 font-bold transition duration-200";
@@ -2338,10 +2338,10 @@ function showLoading(show, text = "Đang xử lý...") {
 function showToast(message, type = "info") {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
+
     const toast = document.createElement('div');
     toast.className = `p-4 rounded-xl shadow-2xl flex items-center gap-3 text-sm text-white font-medium border animate-slide-in pointer-events-auto max-w-xs transition duration-300`;
-    
+
     let icon = "fa-info-circle";
     if (type === "success") {
         toast.classList.add('bg-emerald-950', 'border-emerald-800', 'text-emerald-300');
@@ -2352,14 +2352,14 @@ function showToast(message, type = "info") {
     } else {
         toast.classList.add('bg-slate-900', 'border-slate-800', 'text-slate-300');
     }
-    
+
     toast.innerHTML = `
         <i class="fa-solid ${icon} text-lg"></i>
         <span>${message}</span>
     `;
-    
+
     container.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.classList.add('opacity-0', 'scale-95');
         setTimeout(() => toast.remove(), 300);
@@ -2438,40 +2438,40 @@ function formatDateToDMY(dateString) {
 
 function numberToWords(number) {
     if (number === 0) return "Không đồng";
-    
+
     const units = ["", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
     const places = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
-    
+
     function readThreeDigits(n, showZeroHundred) {
         let hundred = Math.floor(n / 100);
         let ten = Math.floor((n % 100) / 10);
         let unit = n % 10;
         let str = "";
-        
+
         if (hundred > 0 || showZeroHundred) {
             str += units[hundred] + " trăm ";
         }
-        
+
         if (ten > 0) {
             if (ten === 1) str += "mười ";
             else str += units[ten] + " mươi ";
         } else if (hundred > 0 && unit > 0) {
             str += "lẻ ";
         }
-        
+
         if (unit > 0) {
             if (unit === 1 && ten > 1) str += "mốt";
             else if (unit === 5 && ten > 0) str += "lăm";
             else str += units[unit];
         }
-        
+
         return str.trim();
     }
-    
+
     let str = "";
     let placeIdx = 0;
     let temp = number;
-    
+
     while (temp > 0) {
         let chunk = temp % 1000;
         if (chunk > 0) {
@@ -2481,7 +2481,7 @@ function numberToWords(number) {
         temp = Math.floor(temp / 1000);
         placeIdx++;
     }
-    
+
     str = str.trim();
     str = str.charAt(0).toUpperCase() + str.slice(1) + " đồng";
     return str.replace(/\s+/g, ' ');
@@ -2521,11 +2521,11 @@ function exportReceiptToPDF(contractId) {
     }
 
     const qrBase64 = 'data:image/jpeg;base64,' + (window._qrBase64Cache || '');
-    
+
     const pdfContainer = document.createElement('div');
     pdfContainer.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
     document.body.appendChild(pdfContainer);
-    
+
     pdfContainer.innerHTML = `
     <div id="pdf-render-area" style="width:540px;height:765px;background:#fff;color:#000;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;padding:14px;display:flex;flex-direction:column;">
         <div style="padding:4px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;flex:1;">
@@ -2629,38 +2629,38 @@ function exportReceiptToPDF(contractId) {
         </div>
     </div>
     `;
-    
+
     const renderEl = pdfContainer.querySelector('#pdf-render-area');
-    
+
     const opt = {
         margin: [0, 0, 0, 0],
         filename: `HoaDon_${contractId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            allowTaint: true, 
-            logging: false, 
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
             backgroundColor: '#ffffff',
             scrollY: 0,
             scrollX: 0
         },
         jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
     };
-    
+
     // Đợi layout và tải font để tránh lỗi diacritics fallback của trình duyệt
-    return new Promise(function(resolve) {
-        setTimeout(function() {
-            document.fonts.ready.then(function() {
-                html2pdf().set(opt).from(renderEl).toPdf().get('pdf').then(function(pdf) {
+    return new Promise(function (resolve) {
+        setTimeout(function () {
+            document.fonts.ready.then(function () {
+                html2pdf().set(opt).from(renderEl).toPdf().get('pdf').then(function (pdf) {
                     // Lưu file PDF về máy
                     pdf.save(`HoaDon_${contractId}.pdf`);
-                    
+
                     // Dọn dẹp element tạm
                     if (pdfContainer.parentNode) {
                         pdfContainer.parentNode.removeChild(pdfContainer);
                     }
-                    
+
                     // Upload lên Google Drive (chạy ngầm)
                     if (gasUrl && !isDemoMode) {
                         try {
@@ -2681,7 +2681,7 @@ function exportReceiptToPDF(contractId) {
                         }
                     }
                     resolve();
-                }).catch(function(err) {
+                }).catch(function (err) {
                     console.error("PDF generation error:", err);
                     resolve();
                 });
@@ -2712,14 +2712,14 @@ function setupEditImagePreview(type, imageUrl) {
         placeholderId = 'modal-edit-cccd-back-upload-placeholder';
         editUploadedCccdBackBase64 = imageUrl || "";
     }
-    
+
     const input = document.getElementById(inputId);
     if (input) input.value = "";
-    
+
     const container = document.getElementById(containerId);
     const preview = document.getElementById(previewId);
     const placeholder = document.getElementById(placeholderId);
-    
+
     if (imageUrl && (imageUrl.startsWith("http") || imageUrl.startsWith("data:"))) {
         if (preview) preview.src = formatImageUrl(imageUrl, 400);
         if (container) container.classList.remove('hidden');
@@ -2735,7 +2735,7 @@ function updateEditAssetPlaceholders() {
     const type = document.getElementById('modal-edit-asset-type').value;
     const label = document.getElementById('modal-edit-asset-detail-label');
     const input = document.getElementById('modal-edit-asset-detail');
-    
+
     if (label && input) {
         if (type === 'Honda') {
             label.innerHTML = `Biển Số Xe <span class="text-red-500">*</span>`;
@@ -2750,33 +2750,33 @@ function updateEditAssetPlaceholders() {
 function openEditContractModal(hdId) {
     const contract = state.contracts.find(c => c.Ma_HD === hdId);
     if (!contract) return;
-    
+
     document.getElementById('modal-edit-hd-id').value = hdId;
     document.getElementById('modal-edit-hd-display').innerText = hdId;
-    
+
     document.getElementById('modal-edit-customer-name').value = contract.Ten_Khach_Hang || "";
     document.getElementById('modal-edit-customer-phone').value = contract.So_Dien_Thoai || "";
     document.getElementById('modal-edit-customer-cccd').value = contract.So_CCCD || "";
-    
+
     const assetTypeEl = document.getElementById('modal-edit-asset-type');
     if (assetTypeEl) {
         assetTypeEl.value = contract.Loai_Tai_San || "Honda";
     }
-    
+
     updateEditAssetPlaceholders();
     document.getElementById('modal-edit-asset-detail').value = contract.Chi_Tiet_Tai_San || "";
-    
+
     const currentAmount = parseFloat(contract.So_Tien_Cam) || 0;
     document.getElementById('modal-edit-current-amount').innerText = formatVND(currentAmount);
     document.getElementById('modal-edit-amount-input').value = formatNumber(currentAmount);
-    
+
     document.getElementById('modal-edit-contract-date').value = contract.Ngay_Cam || "";
     document.getElementById('modal-edit-notes').value = contract.Ghi_Chu || "";
-    
+
     setupEditImagePreview('edit-asset', contract.Hinh_Anh);
     setupEditImagePreview('edit-cccd-front', contract.Hinh_CCCD_Truoc);
     setupEditImagePreview('edit-cccd-back', contract.Hinh_CCCD_Sau);
-    
+
     document.getElementById('edit-contract-modal').classList.remove('hidden');
 }
 
@@ -2787,14 +2787,14 @@ function closeEditContractModal() {
 async function handleEditContract(e) {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         const hdId = document.getElementById('modal-edit-hd-id').value;
         const newName = document.getElementById('modal-edit-customer-name').value.trim();
@@ -2806,7 +2806,7 @@ async function handleEditContract(e) {
         const newAmount = parseFloat(rawAmount) || 0;
         const newDate = document.getElementById('modal-edit-contract-date').value;
         const newNotes = document.getElementById('modal-edit-notes').value.trim();
-        
+
         if (!newName || !newPhone || !newAssetDetail || !newDate) {
             showToast("Vui lòng điền đầy đủ các trường bắt buộc (*)", "error");
             if (submitBtn) {
@@ -2816,7 +2816,7 @@ async function handleEditContract(e) {
             isSubmitting = false;
             return;
         }
-        
+
         if (newAmount <= 0) {
             showToast("Số tiền cầm phải lớn hơn 0!", "error");
             if (submitBtn) {
@@ -2826,13 +2826,13 @@ async function handleEditContract(e) {
             isSubmitting = false;
             return;
         }
-        
+
         showLoading(true, "Đang cập nhật hợp đồng...");
-        
+
         const contract = state.contracts.find(c => c.Ma_HD === hdId);
         const oldAmount = contract ? (parseFloat(contract.So_Tien_Cam) || 0) : 0;
         const oldNotes = contract ? (contract.Ghi_Chu || "") : "";
-        
+
         const payload = {
             action: "editContract",
             Ma_HD: hdId,
@@ -2851,9 +2851,9 @@ async function handleEditContract(e) {
             cccd_back_image_data: editUploadedCccdBackBase64,
             cccd_back_image_name: editUploadedCccdBackBase64.startsWith("data:") ? `${hdId}_cccd_back.jpg` : undefined
         };
-        
+
         const res = await postToAPI(payload);
-        
+
         if (res.success) {
             // Cập nhật local state
             const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
@@ -2874,11 +2874,11 @@ async function handleEditContract(e) {
                     state.contracts[contractIdx] = res.data;
                 }
             }
-            
+
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
-            
+
             closeEditContractModal();
-            
+
             showToast(`Sửa HĐ ${hdId} thành công.`, "success");
             renderAll();
         } else {
@@ -2902,18 +2902,18 @@ async function handleEditContract(e) {
 function openLiquidateContractModal(hdId, customerName, principal) {
     const contract = state.contracts.find(c => c.Ma_HD === hdId);
     const currentStatus = contract ? contract.Trang_Thai : 'Liquidating';
-    
+
     document.getElementById('modal-liquidate-hd-id').value = hdId;
     document.getElementById('modal-liquidate-customer-name').value = customerName;
     document.getElementById('modal-liquidate-hd-display').innerText = hdId;
     document.getElementById('modal-liquidate-customer-display').innerText = customerName;
-    
+
     const principalVal = parseFloat(principal) || 0;
     document.getElementById('modal-liquidate-principal-display').innerText = formatVND(principalVal);
-    
+
     document.getElementById('modal-liquidate-status-select').value = (currentStatus === 'Liquidating') ? 'Liquidating' : 'Liquidating';
     document.getElementById('modal-liquidate-amount-input').value = formatNumber(principalVal);
-    
+
     toggleLiquidationAmountField();
     document.getElementById('liquidate-contract-modal').classList.remove('hidden');
 }
@@ -2926,7 +2926,7 @@ function toggleLiquidationAmountField() {
     const select = document.getElementById('modal-liquidate-status-select');
     const container = document.getElementById('modal-liquidate-amount-container');
     const input = document.getElementById('modal-liquidate-amount-input');
-    
+
     if (select.value === 'Liquidated') {
         container.classList.remove('hidden');
         input.required = true;
@@ -2939,21 +2939,21 @@ function toggleLiquidationAmountField() {
 async function handleLiquidateContract(e) {
     e.preventDefault();
     if (isSubmitting) return;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
     }
     isSubmitting = true;
-    
+
     try {
         const hdId = document.getElementById('modal-liquidate-hd-id').value;
         const name = document.getElementById('modal-liquidate-customer-name').value;
         const newStatus = document.getElementById('modal-liquidate-status-select').value;
         const rawAmount = document.getElementById('modal-liquidate-amount-input').value.replace(/,/g, '');
         const amountVal = parseFloat(rawAmount) || 0;
-        
+
         if (newStatus === 'Liquidated' && amountVal <= 0) {
             showToast("Số tiền thu hồi phải lớn hơn 0 khi đã thanh lý!", "error");
             if (submitBtn) {
@@ -2963,9 +2963,9 @@ async function handleLiquidateContract(e) {
             isSubmitting = false;
             return;
         }
-        
+
         showLoading(true, "Đang cập nhật trạng thái thanh lý...");
-        
+
         const payload = {
             action: "liquidateContract",
             Ma_HD: hdId,
@@ -2973,22 +2973,22 @@ async function handleLiquidateContract(e) {
             So_Tien_Dong: newStatus === 'Liquidated' ? amountVal : 0,
             Ten_Khach_Hang: name
         };
-        
+
         const res = await postToAPI(payload);
-        
+
         if (res.success) {
             const contractIdx = state.contracts.findIndex(c => c.Ma_HD === hdId);
             if (contractIdx > -1) {
                 state.contracts[contractIdx].Trang_Thai = newStatus;
             }
-            
+
             if (newStatus === 'Liquidated' && amountVal > 0) {
                 let newGdId = "GD0001";
                 if (state.history.length > 0) {
                     const ids = state.history.map(item => parseInt(item.Ma_Giao_Dich.replace("GD", "")) || 0);
                     newGdId = "GD" + String(Math.max(...ids) + 1).padStart(4, "0");
                 }
-                
+
                 const newPayment = {
                     Ma_Giao_Dich: newGdId,
                     Ma_HD: hdId,
@@ -2997,13 +2997,13 @@ async function handleLiquidateContract(e) {
                     So_Tien_Dong: amountVal,
                     Ghi_Chu: "Thanh lý tài sản thu hồi vốn"
                 };
-                
+
                 state.history.push(newPayment);
             }
-            
+
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
-            
+
             closeLiquidateContractModal();
             showToast(`Đã chuyển trạng thái hợp đồng ${hdId}!`, "success");
             switchTab('active-contracts');
@@ -3029,7 +3029,7 @@ function toggleReceiptMobile() {
     const icon = document.getElementById('toggle-receipt-icon');
     const text = document.getElementById('toggle-receipt-text');
     if (!el || !icon || !text) return;
-    
+
     if (el.classList.contains('hidden')) {
         el.classList.remove('hidden');
         icon.className = "fa-solid fa-eye-slash text-[10px]";
@@ -3053,7 +3053,7 @@ function toggleTheme() {
     const root = document.documentElement;
     const icon = document.getElementById('theme-toggle-icon');
     const text = document.getElementById('theme-toggle-text');
-    
+
     if (root.classList.contains('theme-light')) {
         // Switch to dark mode
         root.classList.remove('theme-light');
