@@ -559,15 +559,36 @@ function calculateInterest(principal, assetType, days) {
     }
 }
 
+function parseLocalDate(dateStr) {
+    if (!dateStr) return new Date();
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+    return new Date(dateStr);
+}
+
 function getContractStats(contract) {
-    const loanDate = new Date(contract.Ngay_Cam);
-    const currentDate = new Date();
+    const loanDate = parseLocalDate(contract.Ngay_Cam);
+    let endDate = new Date();
+
+    if (contract.Trang_Thai === 'Closed') {
+        const closeTx = state.history.find(item => item.Ma_HD === contract.Ma_HD && (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ")));
+        if (closeTx && closeTx.Ngay_Dong_Lai) {
+            endDate = parseLocalDate(closeTx.Ngay_Dong_Lai);
+        }
+    } else if (contract.Trang_Thai === 'Liquidated') {
+        const liquidateTx = state.history.find(item => item.Ma_HD === contract.Ma_HD && item.Ghi_Chu.includes("Thanh lý"));
+        if (liquidateTx && liquidateTx.Ngay_Dong_Lai) {
+            endDate = parseLocalDate(liquidateTx.Ngay_Dong_Lai);
+        }
+    }
 
     loanDate.setHours(0, 0, 0, 0);
-    currentDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
 
-    const diffTime = Math.max(0, currentDate - loanDate);
-    const elapsedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const diffTime = Math.max(0, endDate - loanDate);
+    const elapsedDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
     const principal = parseFloat(contract.So_Tien_Cam) || 0;
     const accrued = calculateInterest(principal, contract.Loai_Tai_San, elapsedDays);
@@ -1073,7 +1094,7 @@ function renderStatistics() {
 
     state.history.forEach(item => {
         if (!item.Ngay_Dong_Lai) return;
-        const txDate = new Date(item.Ngay_Dong_Lai);
+        const txDate = parseLocalDate(item.Ngay_Dong_Lai);
         txDate.setHours(0, 0, 0, 0);
 
         const interestAmount = getInterestFromTransaction(item);
@@ -1088,14 +1109,14 @@ function renderStatistics() {
 
     const monthAddedCount = state.contracts.filter(c => {
         if (!c.Ngay_Cam) return false;
-        const addedDate = new Date(c.Ngay_Cam);
+        const addedDate = parseLocalDate(c.Ngay_Cam);
         addedDate.setHours(0, 0, 0, 0);
         return addedDate >= startOfMonth;
     }).length;
 
     const monthClosedCount = state.history.filter(item => {
         if (!item.Ngay_Dong_Lai) return false;
-        const txDate = new Date(item.Ngay_Dong_Lai);
+        const txDate = parseLocalDate(item.Ngay_Dong_Lai);
         txDate.setHours(0, 0, 0, 0);
         return txDate >= startOfMonth && item.Ma_HD !== "THU_NGOAI" && (item.Ghi_Chu.includes("Tất toán") || item.Ghi_Chu.includes("Chuộc đồ"));
     }).length;
@@ -1172,7 +1193,7 @@ function renderStatistics() {
 
         const currentMonthTxs = state.history.filter(item => {
             if (!item.Ngay_Dong_Lai) return false;
-            const txDate = new Date(item.Ngay_Dong_Lai);
+            const txDate = parseLocalDate(item.Ngay_Dong_Lai);
             txDate.setHours(0, 0, 0, 0);
             return txDate >= startOfMonth;
         }).sort((a, b) => b.Ngay_Dong_Lai.localeCompare(a.Ngay_Dong_Lai));
