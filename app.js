@@ -912,7 +912,7 @@ function renderActiveContracts() {
                         <div class="px-3.5 py-2.5 min-w-0">
                             <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Ngày cầm</p>
                             <p class="text-white font-semibold mt-0.5 flex items-center flex-wrap gap-1">
-                                <span>${c.Ngay_Cam}</span>
+                                <span>${formatDateToDMY(c.Ngay_Cam)}</span>
                                 ${isTerminal ? '' : `<span class="${daysColorClass} text-[9px] font-bold">${daysStatusSuffix}</span>`}
                             </p>
                         </div>
@@ -1055,7 +1055,7 @@ function renderPaymentHistory() {
             <td data-label="Mã Giao Dịch" class="py-4 px-6 font-semibold text-slate-400 text-xs">${item.Ma_Giao_Dich}</td>
             <td data-label="Mã HĐ" class="py-4 px-6 text-brand-400 font-bold text-xs cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
             <td data-label="Khách Hàng" class="py-4 px-6 text-white font-medium">${item.Ten_Khach_Hang}</td>
-            <td data-label="Ngày Giao Dịch" class="py-4 px-6 text-slate-400">${item.Ngay_Dong_Lai}</td>
+            <td data-label="Ngày Giao Dịch" class="py-4 px-6 text-slate-400">${formatDateToDMY(item.Ngay_Dong_Lai)}</td>
             <td data-label="Số Tiền Thu" class="py-4 px-6 text-right font-extrabold text-emerald-400">${formatVND(item.So_Tien_Dong)}</td>
             <td data-label="Loại/Ghi Chú" class="py-4 px-6 text-xs text-slate-300">
                 <span class="px-2.5 py-1 rounded-full ${item.Ghi_Chu.includes("Chuộc đồ") ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}">${item.Ghi_Chu}</span>
@@ -1216,7 +1216,7 @@ function renderStatistics() {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/20 border-b border-slate-800/50 transition duration-150";
                 tr.innerHTML = `
-                    <td class="py-3 px-4 text-slate-400">${item.Ngay_Dong_Lai}</td>
+                    <td class="py-3 px-4 text-slate-400">${formatDateToDMY(item.Ngay_Dong_Lai)}</td>
                     <td class="py-3 px-4 text-brand-400 font-bold cursor-pointer hover:underline" onclick="openContractDetailsModal('${item.Ma_HD}')" title="Xem chi tiết hợp đồng">${item.Ma_HD}</td>
                     <td class="py-3 px-4 text-slate-200 font-medium">${item.Ten_Khach_Hang}</td>
                     <td class="py-3 px-4 text-right font-extrabold text-emerald-400">${formatVND(interestAmount)}</td>
@@ -2061,7 +2061,7 @@ function openContractDetailsModal(hdId) {
     document.getElementById('detail-modal-cccd').innerText = contract.So_CCCD || 'Chưa có';
     document.getElementById('detail-modal-asset-type').innerText = contract.Loai_Tai_San;
     document.getElementById('detail-modal-asset-detail').innerText = contract.Chi_Tiet_Tai_San;
-    document.getElementById('detail-modal-date').innerText = contract.Ngay_Cam;
+    document.getElementById('detail-modal-date').innerText = formatDateToDMY(contract.Ngay_Cam);
 
     const statusEl = document.getElementById('detail-modal-status');
     if (contract.Trang_Thai === 'Active') {
@@ -2170,7 +2170,7 @@ function openContractDetailsModal(hdId) {
             tr.className = "hover:bg-slate-800/30 transition border-b border-slate-800/80";
             tr.innerHTML = `
                 <td class="py-2 px-4 font-semibold text-slate-400">${item.Ma_Giao_Dich}</td>
-                <td class="py-2 px-4 text-slate-300">${item.Ngay_Dong_Lai}</td>
+                <td class="py-2 px-4 text-slate-300">${formatDateToDMY(item.Ngay_Dong_Lai)}</td>
                 <td class="py-2 px-4 text-right font-bold text-emerald-400">${formatVND(item.So_Tien_Dong)}</td>
                 <td class="py-2 px-4 text-slate-400">${item.Ghi_Chu}</td>
             `;
@@ -2501,7 +2501,7 @@ function formatDateToDMY(dateString) {
     if (!dateString) return "";
     const parts = dateString.split('-');
     if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
     return dateString;
 }
