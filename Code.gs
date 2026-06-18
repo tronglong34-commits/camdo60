@@ -201,14 +201,14 @@ function doPost(e) {
         }
       }
       
-      // Xử lý lưu ảnh tài sản vào Google Drive nếu có dữ liệu gửi lên
-      var imageUrl = saveBase64ToDrive(params.image_data, params.image_name);
+      // Xử lý lưu ảnh tài sản vào Google Drive nếu có dữ liệu gửi lên (Có thể chia sẻ công khai để hiển thị trên web)
+      var imageUrl = saveBase64ToDrive(params.image_data, params.image_name, true);
       
-      // Xử lý lưu ảnh CCCD mặt trước vào Google Drive nếu có
-      var cccdFrontImageUrl = saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name);
+      // Xử lý lưu ảnh CCCD mặt trước vào Google Drive nếu có (KHÔNG chia sẻ công khai để tránh vi phạm chính sách của Google)
+      var cccdFrontImageUrl = saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name, false);
       
-      // Xử lý lưu ảnh CCCD mặt sau vào Google Drive nếu có
-      var cccdBackImageUrl = saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name);
+      // Xử lý lưu ảnh CCCD mặt sau vào Google Drive nếu có (KHÔNG chia sẻ công khai để tránh vi phạm chính sách của Google)
+      var cccdBackImageUrl = saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name, false);
       
       var rowData = [
         newId,
@@ -434,7 +434,7 @@ function doPost(e) {
         if (params.image_data === "") {
           values[9] = ""; // Xóa hình
         } else if (params.image_data.indexOf("http") !== 0) {
-          values[9] = saveBase64ToDrive(params.image_data, params.image_name || (maHd + "_asset.jpg"));
+          values[9] = saveBase64ToDrive(params.image_data, params.image_name || (maHd + "_asset.jpg"), true);
         }
       }
       
@@ -442,7 +442,7 @@ function doPost(e) {
         if (params.cccd_front_image_data === "") {
           values[12] = ""; // Xóa cccd trước
         } else if (params.cccd_front_image_data.indexOf("http") !== 0) {
-          values[12] = saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name || (maHd + "_cccd_front.jpg"));
+          values[12] = saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name || (maHd + "_cccd_front.jpg"), false);
         }
       }
       
@@ -450,7 +450,7 @@ function doPost(e) {
         if (params.cccd_back_image_data === "") {
           values[13] = ""; // Xóa cccd sau
         } else if (params.cccd_back_image_data.indexOf("http") !== 0) {
-          values[13] = saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name || (maHd + "_cccd_back.jpg"));
+          values[13] = saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name || (maHd + "_cccd_back.jpg"), false);
         }
       }
       
@@ -505,9 +505,9 @@ function doPost(e) {
       }
       
       // Save images to Google Drive
-      var imageUrl = params.image_data ? saveBase64ToDrive(params.image_data, params.image_name) : "";
-      var cccdFrontImageUrl = params.cccd_front_image_data ? saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name) : "";
-      var cccdBackImageUrl = params.cccd_back_image_data ? saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name) : "";
+      var imageUrl = params.image_data ? saveBase64ToDrive(params.image_data, params.image_name, true) : "";
+      var cccdFrontImageUrl = params.cccd_front_image_data ? saveBase64ToDrive(params.cccd_front_image_data, params.cccd_front_image_name, false) : "";
+      var cccdBackImageUrl = params.cccd_back_image_data ? saveBase64ToDrive(params.cccd_back_image_data, params.cccd_back_image_name, false) : "";
       
       // Optimize: Batch write columns J, K, L, M, N (columns 10 to 14)
       // J (10): Hinh_Anh
@@ -554,11 +554,14 @@ function doPost(e) {
           }
           
           var pdfFile = pdfFolder.createFile(blob);
+          // Không chia sẻ công khai hóa đơn để bảo vệ thông tin khách hàng và tránh quét vi phạm bảo mật
+          /*
           try {
             pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           } catch (err) {
             // Bỏ qua lỗi nếu chính sách tổ chức (Google Workspace) chặn chia sẻ công khai
           }
+          */
           pdfUrl = pdfFile.getUrl();
           
           // Ghi nhận link PDF vào cột K (cột 11) của hợp đồng trong Danh_Sach_Cam_Do
@@ -595,7 +598,7 @@ function doPost(e) {
   }
 }
 
-function saveBase64ToDrive(base64Data, fileName) {
+function saveBase64ToDrive(base64Data, fileName, isPublic) {
   if (!base64Data || !fileName) return "";
   try {
     var contentType = base64Data.substring(5, base64Data.indexOf(";base64"));
@@ -607,10 +610,12 @@ function saveBase64ToDrive(base64Data, fileName) {
     var targetFolder = getOrCreateFolder("lưu hình ảnh", "IMAGE_FOLDER_ID", parentFolder.getId());
     
     var file = targetFolder.createFile(blob);
-    try {
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    } catch (err) {
-      // Bỏ qua lỗi chia sẻ ngoài tổ chức
+    if (isPublic) {
+      try {
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch (err) {
+        // Bỏ qua lỗi chia sẻ ngoài tổ chức
+      }
     }
     return file.getUrl();
   } catch (e) {
