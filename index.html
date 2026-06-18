@@ -149,8 +149,8 @@
                     </div>
                 </div>
                 
-                <!-- Navigation Links (Desktop) -->
-                <nav class="hidden md:flex items-center gap-3">
+                <!-- Navigation Links (Desktop/Tablet Threshold shifted to lg) -->
+                <nav class="hidden lg:flex items-center gap-3">
                     <button onclick="switchTab('new-contract')" id="nav-new-contract" 
                         class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition duration-200 flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-plus-circle"></i> Lập Hợp Đồng
@@ -169,27 +169,28 @@
                     </button>
                 </nav>
 
-                <div class="flex items-center gap-1.5 md:gap-3 shrink-0">
+                <div class="flex items-center gap-1.5 lg:gap-3 shrink-0">
                     <!-- Force Sync Button -->
-                    <button onclick="syncData(false)" class="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20 hover:bg-brand-500/20 hover:text-brand-300 transition duration-200 flex items-center gap-1.5 md:gap-2" title="Làm mới & Đồng bộ dữ liệu">
+                    <button onclick="syncData(false)" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20 hover:bg-brand-500/20 hover:text-brand-300 transition duration-200 flex items-center gap-1.5 lg:gap-2" title="Làm mới & Đồng bộ dữ liệu">
                         <i class="fa-solid fa-rotate"></i>
-                        <span class="hidden md:inline text-xs md:text-sm">Làm Mới</span>
+                        <span class="hidden lg:inline text-xs md:text-sm">Làm Mới</span>
                     </button>
 
-                    <!-- Settings Button -->
-                    <button onclick="openSettingsModal()" class="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center gap-1.5 md:gap-2" title="Cài đặt hệ thống">
+                    <!-- Settings Button (Hidden on Mobile/Tablet since it is in the bottom bar) -->
+                    <button onclick="openSettingsModal()" class="hidden lg:flex p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 items-center gap-1.5 lg:gap-2" title="Cài đặt hệ thống">
                         <i class="fa-solid fa-cog"></i>
-                        <span class="hidden md:inline text-xs md:text-sm">Cài Đặt</span>
+                        <span class="hidden lg:inline text-xs md:text-sm">Cài Đặt</span>
                     </button>
 
                     <!-- Theme Toggle Button -->
-                    <button id="theme-toggle-btn" onclick="toggleTheme()" class="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center gap-1.5 md:gap-2" title="Chuyển chế độ Sáng/Tối">
+                    <button id="theme-toggle-btn" onclick="toggleTheme()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center gap-1.5 lg:gap-2" title="Chuyển chế độ Sáng/Tối">
                         <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
-                        <span id="theme-toggle-text" class="hidden md:inline text-xs md:text-sm">Giao diện sáng</span>
+                        <span id="theme-toggle-text" class="hidden lg:inline text-xs md:text-sm">Giao diện sáng</span>
                     </button>
                     
-                    <button onclick="logout()" class="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-1.5 md:gap-2">
-                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden md:inline text-xs md:text-sm">Đăng Xuất</span>
+                    <!-- Logout Button -->
+                    <button onclick="logout()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-1.5 lg:gap-2">
+                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden lg:inline text-xs md:text-sm">Đăng Xuất</span>
                     </button>
                 </div>
             </div>
@@ -766,8 +767,8 @@
 
         </main>
 
-        <!-- FOOTER / BOTTOM NAV (MOBILE ONLY) -->
-        <footer class="md:hidden floating-mobile-dock flex items-center justify-around">
+        <!-- FOOTER / BOTTOM NAV (MOBILE & TABLET ONLY) -->
+        <footer class="lg:hidden floating-mobile-dock flex items-center justify-around">
             <button onclick="switchTab('new-contract')" id="mobile-nav-new-contract" 
                 class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition duration-200">
                 <i class="fa-solid fa-plus-circle text-lg"></i>
