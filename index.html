@@ -150,47 +150,47 @@
                 </div>
                 
                 <!-- Navigation Links (Desktop/Tablet Threshold shifted to lg) -->
-                <nav class="hidden lg:flex items-center gap-1 xl:gap-3">
+                <nav class="hidden lg:flex items-center gap-1 xl:gap-2">
                     <button onclick="switchTab('new-contract')" id="nav-new-contract" 
-                        class="tab-btn px-2.5 xl:px-4 py-2 rounded-xl lg:text-xs xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-plus-circle"></i> Lập Hợp Đồng
                     </button>
                     <button onclick="switchTab('active-contracts')" id="nav-active-contracts"
-                        class="tab-btn px-2.5 xl:px-4 py-2 rounded-xl lg:text-xs xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-receipt"></i> Hợp Đồng Đang Cầm
                     </button>
                     <button onclick="switchTab('payment-history')" id="nav-payment-history"
-                        class="tab-btn px-2.5 xl:px-4 py-2 rounded-xl lg:text-xs xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-history"></i> Lịch Sử Đóng Lãi
                     </button>
                     <button onclick="switchTab('statistics')" id="nav-statistics"
-                        class="tab-btn px-2.5 xl:px-4 py-2 rounded-xl lg:text-xs xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-chart-line"></i> Bảng Thống Kê
                     </button>
                 </nav>
 
-                <div class="flex items-center gap-1.5 lg:gap-2 xl:gap-3 shrink-0">
+                <div class="flex items-center gap-1 lg:gap-1.5 2xl:gap-3 shrink-0">
                     <!-- Force Sync Button -->
                     <button onclick="syncData(false)" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20 hover:bg-brand-500/20 hover:text-brand-300 transition duration-200 flex items-center gap-1.5" title="Làm mới & Đồng bộ dữ liệu">
                         <i class="fa-solid fa-rotate"></i>
-                        <span class="hidden xl:inline text-xs md:text-sm">Làm Mới</span>
+                        <span class="hidden 2xl:inline text-xs md:text-sm">Làm Mới</span>
                     </button>
 
                     <!-- Settings Button (Hidden on Mobile/Tablet since it is in the bottom bar) -->
                     <button onclick="openSettingsModal()" class="hidden lg:flex p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 items-center gap-1.5" title="Cài đặt hệ thống">
                         <i class="fa-solid fa-cog"></i>
-                        <span class="hidden xl:inline text-xs md:text-sm">Cài Đặt</span>
+                        <span class="hidden 2xl:inline text-xs md:text-sm">Cài Đặt</span>
                     </button>
 
                     <!-- Theme Toggle Button -->
                     <button id="theme-toggle-btn" onclick="toggleTheme()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center gap-1.5" title="Chuyển chế độ Sáng/Tối">
                         <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
-                        <span id="theme-toggle-text" class="hidden xl:inline text-xs md:text-sm">Giao diện sáng</span>
+                        <span id="theme-toggle-text" class="hidden 2xl:inline text-xs md:text-sm">Giao diện sáng</span>
                     </button>
                     
                     <!-- Logout Button -->
                     <button onclick="logout()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-1.5">
-                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden xl:inline text-xs md:text-sm">Đăng Xuất</span>
+                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden 2xl:inline text-xs md:text-sm">Đăng Xuất</span>
                     </button>
                 </div>
             </div>
