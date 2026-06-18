@@ -8,8 +8,8 @@ let state = {
 let isDemoMode = false;
 let isSubmitting = false;
 let gasUrl = localStorage.getItem('pawnshop_gas_url') || "";
-let supabaseUrl = localStorage.getItem('pawnshop_supabase_url') || "";
-let supabaseKey = localStorage.getItem('pawnshop_supabase_key') || "";
+let supabaseUrl = localStorage.getItem('pawnshop_supabase_url') || "https://cdrkuhmnatxtoqcnkgzv.supabase.co";
+let supabaseKey = localStorage.getItem('pawnshop_supabase_key') || "sb_publishable_ndtfnwPYoJNgseMHKN_UDg_xVDAahm0";
 let supabaseClient = null;
 
 if (supabaseUrl && supabaseKey) {
