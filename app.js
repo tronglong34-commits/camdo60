@@ -7,7 +7,18 @@ let state = {
 // Mode & Status
 let isDemoMode = false;
 let isSubmitting = false;
-let gasUrl = localStorage.getItem('pawnshop_gas_url') || "https://script.google.com/macros/s/AKfycbwIY9lyJBbdPF9sZ9DkFNMnUavto77nxxgBcJzWXe3GcWby8cQYnsuxhuK0kh2Xu42BeA/exec";
+let gasUrl = localStorage.getItem('pawnshop_gas_url') || "";
+let supabaseUrl = localStorage.getItem('pawnshop_supabase_url') || "";
+let supabaseKey = localStorage.getItem('pawnshop_supabase_key') || "";
+let supabaseClient = null;
+
+if (supabaseUrl && supabaseKey) {
+    try {
+        supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    } catch (e) {
+        console.error("Lỗi khởi tạo Supabase Client:", e);
+    }
+}
 
 // Dummy/Demo Data to show when offline or first time
 const dummyContracts = [
@@ -168,6 +179,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('setting-gas-url')) {
         document.getElementById('setting-gas-url').value = gasUrl;
     }
+    if (document.getElementById('setting-supabase-url')) {
+        document.getElementById('setting-supabase-url').value = supabaseUrl;
+    }
+    if (document.getElementById('setting-supabase-key')) {
+        document.getElementById('setting-supabase-key').value = supabaseKey;
+    }
 
     // 6. Load QR code thành base64 cache cho PDF export
     loadQRBase64();
@@ -239,6 +256,54 @@ async function handleLogin(e) {
         }
         return;
     }
+
+    if (supabaseClient) {
+        showLoading(true, "Đang xác thực đăng nhập...");
+        try {
+            const { data, error } = await supabaseClient
+                .from('config')
+                .select('*')
+                .in('key', ['username', 'password']);
+                
+            if (error) throw error;
+            
+            let dbUsername = "camdo86";
+            let dbPassword = "Tiemcamdo86@123";
+            
+            if (data) {
+                const uRow = data.find(r => r.key === 'username');
+                const pRow = data.find(r => r.key === 'password');
+                if (uRow) dbUsername = uRow.value;
+                if (pRow) dbPassword = pRow.value;
+            }
+            
+            if (userVal === dbUsername && passVal === dbPassword) {
+                sessionStorage.setItem('pawnshop_logged_in', 'true');
+                sessionStorage.setItem('pawnshop_username', userVal);
+                sessionStorage.setItem('pawnshop_password', passVal);
+                showToast("Đăng nhập thành công!", "success");
+                checkLoginState();
+                syncData();
+            } else {
+                showToast("Sai tài khoản hoặc mật khẩu!", "error");
+            }
+        } catch (err) {
+            console.error("Supabase login error:", err);
+            if (userVal === "camdo86" && passVal === "Tiemcamdo86@123") {
+                sessionStorage.setItem('pawnshop_logged_in', 'true');
+                sessionStorage.setItem('pawnshop_username', userVal);
+                sessionStorage.setItem('pawnshop_password', passVal);
+                showToast("Đăng nhập offline thành công!", "success");
+                checkLoginState();
+                syncData();
+            } else {
+                showToast("Không thể kết nối đến máy chủ xác thực. Hãy thử lại!", "error");
+            }
+        } finally {
+            showLoading(false);
+        }
+        return;
+    }
     
     showLoading(true, "Đang xác thực đăng nhập...");
     try {
@@ -307,6 +372,12 @@ function openSettingsModal() {
     if (document.getElementById('setting-gas-url')) {
         document.getElementById('setting-gas-url').value = gasUrl;
     }
+    if (document.getElementById('setting-supabase-url')) {
+        document.getElementById('setting-supabase-url').value = supabaseUrl;
+    }
+    if (document.getElementById('setting-supabase-key')) {
+        document.getElementById('setting-supabase-key').value = supabaseKey;
+    }
 }
 
 function closeSettingsModal() {
@@ -318,8 +389,27 @@ function handleSaveSettings(e) {
     const urlVal = document.getElementById('setting-gas-url').value.trim();
     gasUrl = urlVal;
     localStorage.setItem('pawnshop_gas_url', urlVal);
+
+    const supUrl = document.getElementById('setting-supabase-url').value.trim();
+    const supKey = document.getElementById('setting-supabase-key').value.trim();
+    supabaseUrl = supUrl;
+    supabaseKey = supKey;
+    localStorage.setItem('pawnshop_supabase_url', supUrl);
+    localStorage.setItem('pawnshop_supabase_key', supKey);
+
+    if (supabaseUrl && supabaseKey) {
+        try {
+            supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        } catch (err) {
+            console.error("Lỗi khởi tạo Supabase Client:", err);
+            supabaseClient = null;
+        }
+    } else {
+        supabaseClient = null;
+    }
+
     closeSettingsModal();
-    showToast("Đã lưu cấu hình API Google Sheets!", "success");
+    showToast("Đã lưu cấu hình hệ thống dữ liệu!", "success");
     syncData();
 }
 
@@ -327,7 +417,17 @@ function updateDatabaseStatus() {
     const badge = document.getElementById('mode-badge');
     const statusText = document.getElementById('db-status');
 
-    if (gasUrl) {
+    if (supabaseUrl && supabaseKey) {
+        isDemoMode = false;
+        if (badge) {
+            badge.innerText = "Online";
+            badge.className = "text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        }
+        if (statusText) {
+            statusText.innerText = "Supabase DB";
+            statusText.className = "font-semibold text-emerald-400";
+        }
+    } else if (gasUrl) {
         isDemoMode = false;
         if (badge) {
             badge.innerText = "Online";
@@ -387,9 +487,62 @@ async function syncData(isSilent = false) {
         return;
     }
 
+    if (supabaseClient) {
+        try {
+            const { data: contractsData, error: contractsError } = await supabaseClient
+                .from('contracts')
+                .select('*')
+                .order('Ma_HD', { ascending: true });
+            
+            if (contractsError) throw contractsError;
+
+            const { data: historyData, error: historyError } = await supabaseClient
+                .from('history')
+                .select('*')
+                .order('Ma_Giao_Dich', { ascending: true });
+
+            if (historyError) throw historyError;
+
+            const newContracts = contractsData || [];
+            const newHistory = historyData || [];
+
+            const hasChanges = JSON.stringify(newContracts) !== JSON.stringify(state.contracts) ||
+                JSON.stringify(newHistory) !== JSON.stringify(state.history);
+
+            if (hasChanges || !hasCache) {
+                state.contracts = newContracts;
+                state.history = newHistory;
+
+                localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+                localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+
+                renderAll();
+                if (!isSilent) showToast("Đồng bộ thành công (Supabase)!", "success");
+            } else {
+                if (!isSilent) showToast("Dữ liệu đã ở bản mới nhất!", "success");
+            }
+        } catch (err) {
+            console.error("Supabase sync error:", err);
+            if (!isSilent) {
+                showToast("Lỗi kết nối database Supabase. Đang dùng offline.", "error");
+            }
+            if (!hasCache) {
+                state.contracts = JSON.parse(localStorage.getItem('pawnshop_contracts') || "[]");
+                state.history = JSON.parse(localStorage.getItem('pawnshop_history') || "[]");
+                renderAll();
+            }
+        } finally {
+            if (!isSilent) showLoading(false);
+        }
+        return;
+    }
+
     try {
         // Thêm tham số _t=timestamp để tránh trình duyệt cache request HTTP GET. Nếu làm mới bằng tay, thêm clean=true.
         let fetchUrl = gasUrl;
+        if (!fetchUrl) {
+            throw new Error("Chưa cấu hình API URL");
+        }
         const separator = fetchUrl.indexOf('?') > -1 ? '&' : '?';
         const passwordParam = sessionStorage.getItem('pawnshop_password') || "";
         
@@ -448,10 +601,285 @@ async function syncData(isSilent = false) {
     }
 }
 
+async function uploadBase64ToSupabase(base64Str, bucketName, filePath) {
+    if (!base64Str) return "";
+    try {
+        let cleanBase64 = base64Str;
+        let mimeType = 'image/jpeg';
+        
+        if (base64Str.indexOf(';base64,') > -1) {
+            const parts = base64Str.split(';base64,');
+            mimeType = parts[0].split(':')[1];
+            cleanBase64 = parts[1];
+        }
+        
+        const byteCharacters = atob(cleanBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+        
+        const { data, error } = await supabaseClient.storage
+            .from(bucketName)
+            .upload(filePath, blob, {
+                contentType: mimeType,
+                upsert: true
+            });
+            
+        if (error) throw error;
+        
+        if (bucketName === 'pawnshop-public') {
+            const { data: publicUrlData } = supabaseClient.storage
+                .from(bucketName)
+                .getPublicUrl(filePath);
+            return publicUrlData.publicUrl;
+        } else {
+            return filePath;
+        }
+    } catch (err) {
+        console.error("Upload error for " + filePath, err);
+        return "";
+    }
+}
+
 async function postToAPI(payload) {
     if (isDemoMode) return { success: true };
+
+    if (supabaseClient) {
+        try {
+            const action = payload.action;
+            
+            if (action === "createContract") {
+                let hdId = payload.Ma_HD;
+                if (!hdId) {
+                    const ids = state.contracts.map(c => parseInt(c.Ma_HD.replace("HD", "")) || 0);
+                    hdId = "HD" + String(Math.max(...ids, 0) + 1).padStart(4, "0");
+                }
+                
+                const { error } = await supabaseClient
+                    .from('contracts')
+                    .insert([{
+                        Ma_HD: hdId,
+                        Ten_Khach_Hang: payload.Ten_Khach_Hang || "",
+                        So_Dien_Thoai: payload.So_Dien_Thoai || "",
+                        Loai_Tai_San: payload.Loai_Tai_San || "",
+                        Chi_Tiet_Tai_San: payload.Chi_Tiet_Tai_San || "",
+                        So_Tien_Cam: parseFloat(payload.So_Tien_Cam) || 0,
+                        Ngay_Cam: payload.Ngay_Cam || new Date().toISOString().split('T')[0],
+                        Trang_Thai: "Active",
+                        Ghi_Chu: payload.Ghi_Chu || "",
+                        Hinh_Anh: "",
+                        PDF_Url: "",
+                        So_CCCD: payload.So_CCCD || "",
+                        Hinh_CCCD_Truoc: "",
+                        Hinh_CCCD_Sau: ""
+                    }]);
+                    
+                if (error) throw error;
+                return { success: true };
+            }
+            
+            else if (action === "updateImages") {
+                const hdId = payload.Ma_HD;
+                const updates = {};
+                
+                if (payload.image_data) {
+                    const imgUrl = await uploadBase64ToSupabase(payload.image_data, 'pawnshop-public', `images/pawn_${hdId}.jpg`);
+                    if (imgUrl) updates.Hinh_Anh = imgUrl;
+                }
+                if (payload.cccd_front_image_data) {
+                    const cccdFrontPath = await uploadBase64ToSupabase(payload.cccd_front_image_data, 'pawnshop-private', `cccd_front_${hdId}.jpg`);
+                    if (cccdFrontPath) updates.Hinh_CCCD_Truoc = cccdFrontPath;
+                }
+                if (payload.cccd_back_image_data) {
+                    const cccdBackPath = await uploadBase64ToSupabase(payload.cccd_back_image_data, 'pawnshop-private', `cccd_back_${hdId}.jpg`);
+                    if (cccdBackPath) updates.Hinh_CCCD_Sau = cccdBackPath;
+                }
+                
+                if (Object.keys(updates).length > 0) {
+                    const { error } = await supabaseClient
+                        .from('contracts')
+                        .update(updates)
+                        .eq('Ma_HD', hdId);
+                    if (error) throw error;
+                }
+                return { success: true };
+            }
+            
+            else if (action === "addPayment") {
+                let gdId = payload.Ma_Giao_Dich;
+                if (!gdId) {
+                    const ids = state.history.map(h => parseInt(h.Ma_Giao_Dich.replace("GD", "")) || 0);
+                    gdId = "GD" + String(Math.max(...ids, 0) + 1).padStart(4, "0");
+                }
+                
+                const { error } = await supabaseClient
+                    .from('history')
+                    .insert([{
+                        Ma_Giao_Dich: gdId,
+                        Ma_HD: payload.Ma_HD,
+                        Ten_Khach_Hang: payload.Ten_Khach_Hang,
+                        Ngay_Dong_Lai: payload.Ngay_Dong_Lai || new Date().toISOString().split('T')[0],
+                        So_Tien_Dong: parseFloat(payload.So_Tien_Dong) || 0,
+                        Ghi_Chu: payload.Ghi_Chu || ""
+                    }]);
+                    
+                if (error) throw error;
+                return { success: true };
+            }
+            
+            else if (action === "closeContract") {
+                const { error: updateError } = await supabaseClient
+                    .from('contracts')
+                    .update({ Trang_Thai: 'Closed' })
+                    .eq('Ma_HD', payload.Ma_HD);
+                    
+                if (updateError) throw updateError;
+                
+                if (payload.So_Tien_Dong && parseFloat(payload.So_Tien_Dong) > 0) {
+                    const ids = state.history.map(h => parseInt(h.Ma_Giao_Dich.replace("GD", "")) || 0);
+                    const gdId = "GD" + String(Math.max(...ids, 0) + 1).padStart(4, "0");
+                    
+                    const { error: historyError } = await supabaseClient
+                        .from('history')
+                        .insert([{
+                            Ma_Giao_Dich: gdId,
+                            Ma_HD: payload.Ma_HD,
+                            Ten_Khach_Hang: payload.Ten_Khach_Hang,
+                            Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
+                            So_Tien_Dong: parseFloat(payload.So_Tien_Dong),
+                            Ghi_Chu: "Tất toán hợp đồng (Chuộc đồ)"
+                        }]);
+                        
+                    if (historyError) throw historyError;
+                }
+                return { success: true };
+            }
+            
+            else if (action === "liquidateContract") {
+                const { error: updateError } = await supabaseClient
+                    .from('contracts')
+                    .update({ Trang_Thai: payload.Trang_Thai })
+                    .eq('Ma_HD', payload.Ma_HD);
+                    
+                if (updateError) throw updateError;
+                
+                if (payload.Trang_Thai === "Liquidated" && payload.So_Tien_Dong && parseFloat(payload.So_Tien_Dong) > 0) {
+                    const ids = state.history.map(h => parseInt(h.Ma_Giao_Dich.replace("GD", "")) || 0);
+                    const gdId = "GD" + String(Math.max(...ids, 0) + 1).padStart(4, "0");
+                    
+                    const { error: historyError } = await supabaseClient
+                        .from('history')
+                        .insert([{
+                            Ma_Giao_Dich: gdId,
+                            Ma_HD: payload.Ma_HD,
+                            Ten_Khach_Hang: payload.Ten_Khach_Hang,
+                            Ngay_Dong_Lai: new Date().toISOString().split('T')[0],
+                            So_Tien_Dong: parseFloat(payload.So_Tien_Dong),
+                            Ghi_Chu: "Thanh lý tài sản thu hồi vốn"
+                        }]);
+                        
+                    if (historyError) throw historyError;
+                }
+                return { success: true };
+            }
+            
+            else if (action === "editContract") {
+                const updates = {
+                    Ten_Khach_Hang: payload.Ten_Khach_Hang,
+                    So_Dien_Thoai: payload.So_Dien_Thoai,
+                    Loai_Tai_San: payload.Loai_Tai_San,
+                    Chi_Tiet_Tai_San: payload.Chi_Tiet_Tai_San,
+                    So_Tien_Cam: parseFloat(payload.So_Tien_Cam) || 0,
+                    Ngay_Cam: payload.Ngay_Cam,
+                    Ghi_Chu: payload.Ghi_Chu,
+                    So_CCCD: payload.So_CCCD
+                };
+                
+                if (payload.image_data !== undefined) {
+                    if (payload.image_data === "") {
+                        updates.Hinh_Anh = "";
+                    } else if (payload.image_data.indexOf("http") !== 0) {
+                        const imgUrl = await uploadBase64ToSupabase(payload.image_data, 'pawnshop-public', `images/pawn_${payload.Ma_HD}.jpg`);
+                        if (imgUrl) updates.Hinh_Anh = imgUrl;
+                    }
+                }
+                
+                if (payload.cccd_front_image_data !== undefined) {
+                    if (payload.cccd_front_image_data === "") {
+                        updates.Hinh_CCCD_Truoc = "";
+                    } else if (payload.cccd_front_image_data.indexOf("http") !== 0) {
+                        const cccdFrontPath = await uploadBase64ToSupabase(payload.cccd_front_image_data, 'pawnshop-private', `cccd_front_${payload.Ma_HD}.jpg`);
+                        if (cccdFrontPath) updates.Hinh_CCCD_Truoc = cccdFrontPath;
+                    }
+                }
+                
+                if (payload.cccd_back_image_data !== undefined) {
+                    if (payload.cccd_back_image_data === "") {
+                        updates.Hinh_CCCD_Sau = "";
+                    } else if (payload.cccd_back_image_data.indexOf("http") !== 0) {
+                        const cccdBackPath = await uploadBase64ToSupabase(payload.cccd_back_image_data, 'pawnshop-private', `cccd_back_${payload.Ma_HD}.jpg`);
+                        if (cccdBackPath) updates.Hinh_CCCD_Sau = cccdBackPath;
+                    }
+                }
+                
+                const { error } = await supabaseClient
+                    .from('contracts')
+                    .update(updates)
+                    .eq('Ma_HD', payload.Ma_HD);
+                    
+                if (error) throw error;
+                return { success: true };
+            }
+            
+            else if (action === "uploadPDF") {
+                let cleanBase64 = payload.pdf_data;
+                if (cleanBase64.indexOf(";base64,") > -1) {
+                    cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(";base64,") + 8);
+                }
+                const byteCharacters = atob(cleanBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                
+                const pdfPath = `pdfs/${payload.pdf_name}`;
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('pawnshop-public')
+                    .upload(pdfPath, blob, {
+                        contentType: 'application/pdf',
+                        upsert: true
+                    });
+                    
+                if (uploadError) throw uploadError;
+                
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from('pawnshop-public')
+                    .getPublicUrl(pdfPath);
+                    
+                const pdfUrl = publicUrlData.publicUrl;
+                
+                const { error: updateError } = await supabaseClient
+                    .from('contracts')
+                    .update({ PDF_Url: pdfUrl })
+                    .eq('Ma_HD', payload.Ma_HD);
+                    
+                if (updateError) throw updateError;
+                return { success: true, url: pdfUrl };
+            }
+            
+            throw new Error("Action không hợp lệ: " + action);
+        } catch (err) {
+            console.error("Supabase POST error:", err);
+            return { success: false, error: err.toString() };
+        }
+    }
+
     try {
-        // Đính kèm mật khẩu vào payload để xác thực ghi dữ liệu
         payload.password = sessionStorage.getItem('pawnshop_password') || "";
         
         const response = await fetch(gasUrl, {
@@ -2118,45 +2546,51 @@ function openContractDetailsModal(hdId) {
         imgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh đính kèm</span>`;
     }
 
-    const cccdFrontImgContainer = document.getElementById('detail-modal-cccd-front-image-container');
-    if (cccdFrontImgContainer) {
-        if (contract.Hinh_CCCD_Truoc) {
-            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Truoc, 400);
-            const zoomUrl = formatImageUrl(contract.Hinh_CCCD_Truoc, 1200);
-            if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
-                cccdFrontImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${zoomUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
-            } else {
-                cccdFrontImgContainer.innerHTML = `
-                    <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_CCCD_Truoc}">
+    const loadCCCDImage = async (path, containerId, fallbackText) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (!path) {
+            container.innerHTML = `<span class="text-slate-500 italic text-[11px]">${fallbackText}</span>`;
+            return;
+        }
+        
+        if (path.startsWith("http") || path.startsWith("data:")) {
+            const displayUrl = formatImageUrl(path, 400);
+            const zoomUrl = formatImageUrl(path, 1200);
+            container.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${zoomUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
+            return;
+        }
+        
+        if (supabaseClient) {
+            container.innerHTML = `<div class="flex items-center justify-center h-full text-[10px] text-slate-500"><i class="fa-solid fa-spinner animate-spin mr-1"></i></div>`;
+            try {
+                const { data, error } = await supabaseClient.storage
+                    .from('pawnshop-private')
+                    .createSignedUrl(path, 120);
+                if (error) throw error;
+                container.innerHTML = `<img src="${data.signedUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${data.signedUrl}')">`;
+            } catch (err) {
+                console.error("Signed URL error:", err);
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Lỗi: ${path}">
                         <i class="fa-solid fa-image-slash text-lg mb-1 text-slate-600"></i>
-                        <span class="text-[10px] font-semibold text-slate-500">Ảnh không khả dụng</span>
+                        <span class="text-[10px] font-semibold text-slate-500">Lỗi tải ảnh</span>
                     </div>
                 `;
             }
         } else {
-            cccdFrontImgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh mặt trước</span>`;
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${path}">
+                    <i class="fa-solid fa-image-slash text-lg mb-1 text-slate-600"></i>
+                    <span class="text-[10px] font-semibold text-slate-500">Ảnh không khả dụng</span>
+                </div>
+            `;
         }
-    }
+    };
 
-    const cccdBackImgContainer = document.getElementById('detail-modal-cccd-back-image-container');
-    if (cccdBackImgContainer) {
-        if (contract.Hinh_CCCD_Sau) {
-            const displayUrl = formatImageUrl(contract.Hinh_CCCD_Sau, 400);
-            const zoomUrl = formatImageUrl(contract.Hinh_CCCD_Sau, 1200);
-            if (displayUrl.startsWith("http") || displayUrl.startsWith("data:")) {
-                cccdBackImgContainer.innerHTML = `<img src="${displayUrl}" class="max-h-full max-w-full object-cover cursor-zoom-in rounded-lg" onclick="openLightbox('${zoomUrl}')" onerror="this.outerHTML='<div class=\'flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl\'><i class=\'fa-solid fa-image-slash text-lg mb-1 text-slate-600\'></i><span class=\'text-[10px] font-semibold text-slate-500\'>Ảnh không khả dụng</span></div>';">`;
-            } else {
-                cccdBackImgContainer.innerHTML = `
-                    <div class="flex flex-col items-center justify-center text-slate-500 p-2 border border-white/5 bg-slate-950/20 rounded-xl" title="Chi tiết: ${contract.Hinh_CCCD_Sau}">
-                        <i class="fa-solid fa-image-slash text-lg mb-1 text-slate-600"></i>
-                        <span class="text-[10px] font-semibold text-slate-500">Ảnh không khả dụng</span>
-                    </div>
-                `;
-            }
-        } else {
-            cccdBackImgContainer.innerHTML = `<span class="text-slate-500 italic text-[11px]">Không có ảnh mặt sau</span>`;
-        }
-    }
+    loadCCCDImage(contract.Hinh_CCCD_Truoc, 'detail-modal-cccd-front-image-container', 'Không có ảnh mặt trước');
+    loadCCCDImage(contract.Hinh_CCCD_Sau, 'detail-modal-cccd-back-image-container', 'Không có ảnh mặt sau');
     // Load transaction history for this contract
     const historyBody = document.getElementById('detail-modal-history-body');
     historyBody.innerHTML = "";
