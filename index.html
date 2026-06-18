@@ -1180,78 +1180,45 @@
         </div>
     </div>
 
-    <!-- ==================== MODAL: CÀI ĐẶT API ==================== -->
+    <!-- ==================== MODAL: CÀI ĐẶT TÀI KHOẢN ADMIN ==================== -->
     <div id="settings-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-md p-6 rounded-2xl glass-card shadow-2xl relative border border-slate-800 bg-slate-900">
             <div class="flex items-center justify-between pb-4 border-b border-slate-800">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-gears text-brand-500"></i> Cấu Hình Hệ Thống Dữ Liệu
+                    <i class="fa-solid fa-user-gear text-brand-500"></i> Cài Đặt Tài Khoản Admin
                 </h3>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white transition duration-200">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
             
-            <form id="settings-form" class="mt-4 space-y-4">
-                <div class="border-b border-slate-800 pb-3">
-                    <span class="text-xs font-bold text-brand-400 uppercase tracking-wider block mb-2">Supabase Database (Khuyên dùng)</span>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-400 mb-1">SUPABASE URL</label>
-                            <input type="url" id="setting-supabase-url" 
-                                class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
-                                placeholder="https://your-project.supabase.co">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-400 mb-1">SUPABASE ANON KEY</label>
-                            <input type="password" id="setting-supabase-key" 
-                                class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
-                                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-                        </div>
+            <div class="mt-4 space-y-4">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 mb-1">TÊN ĐĂNG NHẬP MỚI</label>
+                        <input type="text" id="setting-new-username" autocomplete="new-username"
+                            class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
+                            placeholder="Tên đăng nhập mới">
                     </div>
-                </div>
-
-                <div>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Google Web App URL (Legacy)</span>
-                    <input type="url" id="setting-gas-url" 
-                        class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
-                        placeholder="https://script.google.com/macros/s/.../exec">
-                    <p class="text-[9px] text-slate-500 mt-1">Dán link Google Apps Script cũ nếu muốn đồng bộ lại Google Sheet.</p>
-                </div>
-
-                <div class="border-t border-slate-800 pt-3">
-                    <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block mb-2">Đổi Tài Khoản Đăng Nhập Admin</span>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-400 mb-1">TÊN ĐĂNG NHẬP MỚI</label>
-                            <input type="text" id="setting-new-username" autocomplete="new-username"
-                                class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
-                                placeholder="Tên đăng nhập mới">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-400 mb-1">MẬT KHẨU MỚI</label>
-                            <input type="password" id="setting-new-password" autocomplete="new-password"
-                                class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
-                                placeholder="Mật khẩu mới">
-                        </div>
-                        <button type="button" onclick="handleChangeCredentials(event)"
-                            class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition duration-200">
-                            Cập Nhật Tài Khoản
-                        </button>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 mb-1">MẬT KHẨU MỚI</label>
+                        <input type="password" id="setting-new-password" autocomplete="new-password"
+                            class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
+                            placeholder="Mật khẩu mới">
                     </div>
+                    <button type="button" onclick="handleChangeCredentials(event)"
+                        class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition duration-200 shadow-md">
+                        Cập Nhật Tài Khoản
+                    </button>
                 </div>
 
-                <div class="flex gap-3 pt-4 border-t border-slate-800">
+                <div class="pt-4 border-t border-slate-800">
                     <button type="button" onclick="closeSettingsModal()"
-                        class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
+                        class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
                         Đóng
                     </button>
-                    <button type="submit"
-                        class="flex-1 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold rounded-xl text-xs transition duration-200">
-                        Lưu Cấu Hình
-                    </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
