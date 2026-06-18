@@ -907,6 +907,9 @@
                         <button id="detail-modal-repawn-btn" class="px-4 py-2.5 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-500 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-md hidden">
                             <i class="fa-solid fa-rotate-right"></i> Cầm Lại
                         </button>
+                        <button id="detail-modal-delete-btn" class="px-4 py-2.5 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 hover:border-rose-500 font-bold rounded-xl text-xs transition duration-200 flex items-center gap-1.5 shadow-md hidden">
+                            <i class="fa-solid fa-trash"></i> Xóa HĐ
+                        </button>
                     </div>
                     
                     <!-- Daily operations (Right side) -->
@@ -1207,6 +1210,28 @@
                         class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
                         placeholder="https://script.google.com/macros/s/.../exec">
                     <p class="text-[9px] text-slate-500 mt-1">Dán link Google Apps Script cũ nếu muốn đồng bộ lại Google Sheet.</p>
+                </div>
+
+                <div class="border-t border-slate-800 pt-3">
+                    <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block mb-2">Đổi Tài Khoản Đăng Nhập Admin</span>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 mb-1">TÊN ĐĂNG NHẬP MỚI</label>
+                            <input type="text" id="setting-new-username" autocomplete="new-username"
+                                class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
+                                placeholder="Tên đăng nhập mới">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 mb-1">MẬT KHẨU MỚI</label>
+                            <input type="password" id="setting-new-password" autocomplete="new-password"
+                                class="w-full px-4 py-2.5 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" 
+                                placeholder="Mật khẩu mới">
+                        </div>
+                        <button type="button" onclick="handleChangeCredentials(event)"
+                            class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition duration-200">
+                            Cập Nhật Tài Khoản
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex gap-3 pt-4 border-t border-slate-800">

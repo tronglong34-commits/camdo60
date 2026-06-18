@@ -413,6 +413,53 @@ function handleSaveSettings(e) {
     syncData();
 }
 
+async function handleChangeCredentials(e) {
+    if (e) e.preventDefault();
+    
+    const newUsername = document.getElementById('setting-new-username').value.trim();
+    const newPassword = document.getElementById('setting-new-password').value.trim();
+    
+    if (!newUsername || !newPassword) {
+        showToast("Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu mới!", "warning");
+        return;
+    }
+    
+    if (!supabaseClient) {
+        showToast("Chức năng đổi mật khẩu Admin chỉ hỗ trợ khi kết nối với Supabase!", "error");
+        return;
+    }
+    
+    showLoading(true, "Đang cập nhật tài khoản Admin...");
+    try {
+        const { error: errorU } = await supabaseClient
+            .from('config')
+            .update({ value: newUsername })
+            .eq('key', 'username');
+            
+        if (errorU) throw errorU;
+        
+        const { error: errorP } = await supabaseClient
+            .from('config')
+            .update({ value: newPassword })
+            .eq('key', 'password');
+            
+        if (errorP) throw errorP;
+        
+        sessionStorage.setItem('pawnshop_username', newUsername);
+        sessionStorage.setItem('pawnshop_password', newPassword);
+        
+        showToast("Đã đổi tài khoản và mật khẩu Admin thành công!", "success");
+        
+        document.getElementById('setting-new-username').value = "";
+        document.getElementById('setting-new-password').value = "";
+    } catch (err) {
+        console.error("Lỗi cập nhật credentials:", err);
+        showToast("Gặp lỗi khi lưu tài khoản mới: " + err.message, "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
 function updateDatabaseStatus() {
     const badge = document.getElementById('mode-badge');
     const statusText = document.getElementById('db-status');
@@ -786,6 +833,33 @@ async function postToAPI(payload) {
                 return { success: true };
             }
             
+            else if (action === "deleteContract") {
+                const hdId = payload.Ma_HD;
+                
+                const { error: dbError } = await supabaseClient
+                    .from('contracts')
+                    .delete()
+                    .eq('Ma_HD', hdId);
+                    
+                if (dbError) throw dbError;
+                
+                try {
+                    await supabaseClient.storage.from('pawnshop-public').remove([
+                        `images/pawn_${hdId}.jpg`,
+                        `pdfs/HoaDon_${hdId}.pdf`
+                    ]);
+                    
+                    await supabaseClient.storage.from('pawnshop-private').remove([
+                        `cccd_front_${hdId}.jpg`,
+                        `cccd_back_${hdId}.jpg`
+                    ]);
+                } catch (storageErr) {
+                    console.warn("Storage deletion warning:", storageErr);
+                }
+                
+                return { success: true };
+            }
+            
             else if (action === "editContract") {
                 const updates = {
                     Ten_Khach_Hang: payload.Ten_Khach_Hang,
@@ -880,6 +954,9 @@ async function postToAPI(payload) {
     }
 
     try {
+        if (payload.action === "deleteContract") {
+            return { success: false, error: "Chức năng xóa hợp đồng chỉ được hỗ trợ khi kết nối với cơ sở dữ liệu Supabase." };
+        }
         payload.password = sessionStorage.getItem('pawnshop_password') || "";
         
         const response = await fetch(gasUrl, {
@@ -2666,6 +2743,29 @@ function openContractDetailsModal(hdId) {
                 handleRePawn(hdId);
             };
         }
+    }
+
+    const deleteBtn = document.getElementById('detail-modal-delete-btn');
+    if (deleteBtn) {
+        deleteBtn.classList.remove('hidden');
+        deleteBtn.onclick = async () => {
+            if (confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn hợp đồng ${hdId} và toàn bộ lịch sử đóng lãi liên quan không? Hành động này không thể hoàn tác!`)) {
+                closeContractDetailsModal();
+                showLoading(true, "Đang xóa hợp đồng...");
+                const res = await postToAPI({ action: "deleteContract", Ma_HD: hdId });
+                if (res.success) {
+                    showToast(`Đã xóa hợp đồng ${hdId} thành công!`, "success");
+                    state.contracts = state.contracts.filter(c => c.Ma_HD !== hdId);
+                    state.history = state.history.filter(h => h.Ma_HD !== hdId);
+                    localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
+                    localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+                    renderAll();
+                } else {
+                    showToast("Lỗi khi xóa hợp đồng: " + (res.error || "Không xác định"), "error");
+                }
+                showLoading(false);
+            }
+        };
     }
 
     document.getElementById('contract-details-modal').classList.remove('hidden');
