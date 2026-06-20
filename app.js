@@ -1314,9 +1314,9 @@ function renderActiveContracts() {
                     daysColorClass = "text-amber-400";
                     daysStatusSuffix = `(${stats.days} ngày - Đến hạn)`;
                 } else {
-                    paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Trễ hạn ${unpaidDays}n</span>`;
+                    paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Chưa đóng lãi ${unpaidDays}n</span>`;
                     daysColorClass = "text-rose-400";
-                    daysStatusSuffix = `(${stats.days} ngày - Trễ hạn)`;
+                    daysStatusSuffix = `(${stats.days} ngày - Chưa đóng lãi)`;
                 }
             }
         }
@@ -2582,7 +2582,7 @@ function openContractDetailsModal(hdId) {
             statusEl.innerText = 'Đến hạn đóng lãi';
             statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
         } else {
-            statusEl.innerText = `Trễ hạn ${unpaidDays} ngày`;
+            statusEl.innerText = `Chưa đóng lãi ${unpaidDays} ngày`;
             statusEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20";
         }
     } else if (contract.Trang_Thai === 'Liquidating') {
