@@ -232,12 +232,7 @@ function loadQRBase64() {
 }
 
 function checkLoginState() {
-    // Tạm thời tự động đăng nhập (bỏ qua màn hình mật khẩu)
-    sessionStorage.setItem('pawnshop_logged_in', 'true');
-    sessionStorage.setItem('pawnshop_username', 'camdo86');
-    sessionStorage.setItem('pawnshop_password', 'Tiemcamdo86@123');
-
-    const isLoggedIn = true;
+    const isLoggedIn = sessionStorage.getItem('pawnshop_logged_in') === 'true';
 
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
