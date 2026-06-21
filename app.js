@@ -1,8 +1,11 @@
 // ==================== CONFIGURATION & STATE ====================
 let state = {
     contracts: [],
-    history: []
+    history: [],
+    cashBook: []
 };
+
+let activeContractsViewMode = localStorage.getItem('pawnshop_view_mode') || 'card';
 
 // Mode & Status
 let isDemoMode = false;
@@ -102,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Format currency inputs on focus/blur to prevent Gboard duplication/IME issues entirely while keeping live preview updates
-    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input', 'modal-edit-amount-input', 'modal-direct-capital', 'modal-direct-profit'];
+    const currencyInputs = ['loan-amount-input', 'modal-pay-amount-input', 'modal-close-amount-input', 'modal-liquidate-amount-input', 'modal-edit-amount-input', 'modal-direct-capital', 'modal-direct-profit', 'modal-voucher-amount', 'modal-transfer-amount'];
     currencyInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -175,6 +178,11 @@ document.addEventListener("DOMContentLoaded", () => {
         settingsForm.addEventListener('submit', handleSaveSettings);
     }
 
+    const transferForm = document.getElementById('transfer-form');
+    if (transferForm) {
+        transferForm.addEventListener('submit', handleSaveTransfer);
+    }
+
     // 5. Initialize settings fields
     if (document.getElementById('setting-gas-url')) {
         document.getElementById('setting-gas-url').value = gasUrl;
@@ -224,7 +232,12 @@ function loadQRBase64() {
 }
 
 function checkLoginState() {
-    const isLoggedIn = sessionStorage.getItem('pawnshop_logged_in') === 'true';
+    // Tạm thời tự động đăng nhập (bỏ qua màn hình mật khẩu)
+    sessionStorage.setItem('pawnshop_logged_in', 'true');
+    sessionStorage.setItem('pawnshop_username', 'camdo86');
+    sessionStorage.setItem('pawnshop_password', 'Tiemcamdo86@123');
+
+    const isLoggedIn = true;
 
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
@@ -504,19 +517,23 @@ async function syncData(isSilent = false) {
     // Check if we have cached data locally
     let localContracts = localStorage.getItem('pawnshop_contracts');
     let localHistory = localStorage.getItem('pawnshop_history');
-    let hasCache = !!(localContracts || localHistory);
+    let localCashBook = localStorage.getItem('pawnshop_cashbook');
+    let hasCache = !!(localContracts || localHistory || localCashBook);
 
     // If cache exists, load and render it immediately for perceived instant speed (SWR)
     if (hasCache) {
         state.contracts = localContracts ? JSON.parse(localContracts) : [];
         state.history = localHistory ? JSON.parse(localHistory) : [];
+        state.cashBook = localCashBook ? JSON.parse(localCashBook) : [];
         renderAll();
     } else if (isDemoMode) {
         // Use dummy data if in demo mode and no cache exists
         state.contracts = dummyContracts;
         state.history = dummyHistory;
+        state.cashBook = [];
         localStorage.setItem('pawnshop_contracts', JSON.stringify(dummyContracts));
         localStorage.setItem('pawnshop_history', JSON.stringify(dummyHistory));
+        localStorage.setItem('pawnshop_cashbook', JSON.stringify([]));
         renderAll();
     }
 
@@ -550,18 +567,45 @@ async function syncData(isSilent = false) {
 
             if (historyError) throw historyError;
 
+            // Fetch cash_book
+            let cashBookData = [];
+            try {
+                const { data: cbData, error: cbError } = await supabaseClient
+                    .from('cash_book')
+                    .select('*')
+                    .order('ma_phieu', { ascending: true });
+                if (cbError) throw cbError;
+                cashBookData = cbData || [];
+            } catch (cbErr) {
+                console.error("Error reading cash_book from Supabase:", cbErr);
+            }
+
             const newContracts = contractsData || [];
             const newHistory = historyData || [];
+            const newCashBook = cashBookData.map(item => ({
+                Ma_Phieu: item.ma_phieu,
+                Ngay: item.ngay,
+                Loai: item.loai,
+                Hang_Muc: item.hang_muc,
+                So_Tien: parseFloat(item.so_tien) || 0,
+                Phuong_Thuc: item.phuong_thuc,
+                Ma_HD: item.ma_hd || "",
+                Nguoi_Thuc_Hien: item.nguoi_thuc_hien || "",
+                Ghi_Chu: item.ghi_chu || ""
+            })) || [];
 
             const hasChanges = JSON.stringify(newContracts) !== JSON.stringify(state.contracts) ||
-                JSON.stringify(newHistory) !== JSON.stringify(state.history);
+                JSON.stringify(newHistory) !== JSON.stringify(state.history) ||
+                JSON.stringify(newCashBook) !== JSON.stringify(state.cashBook);
 
             if (hasChanges || !hasCache) {
                 state.contracts = newContracts;
                 state.history = newHistory;
+                state.cashBook = newCashBook;
 
                 localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
                 localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+                localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
 
                 renderAll();
                 if (!isSilent) showToast("Đồng bộ thành công (Supabase)!", "success");
@@ -576,6 +620,7 @@ async function syncData(isSilent = false) {
             if (!hasCache) {
                 state.contracts = JSON.parse(localStorage.getItem('pawnshop_contracts') || "[]");
                 state.history = JSON.parse(localStorage.getItem('pawnshop_history') || "[]");
+                state.cashBook = JSON.parse(localStorage.getItem('pawnshop_cashbook') || "[]");
                 renderAll();
             }
         } finally {
@@ -604,17 +649,21 @@ async function syncData(isSilent = false) {
         if (resData.success) {
             const newContracts = resData.data.contracts || [];
             const newHistory = resData.data.history || [];
+            const newCashBook = resData.data.cashBook || [];
 
             // Check if backend data differs from local cache
             const hasChanges = JSON.stringify(newContracts) !== JSON.stringify(state.contracts) ||
-                JSON.stringify(newHistory) !== JSON.stringify(state.history);
+                JSON.stringify(newHistory) !== JSON.stringify(state.history) ||
+                JSON.stringify(newCashBook) !== JSON.stringify(state.cashBook);
 
             if (hasChanges || !hasCache) {
                 state.contracts = newContracts;
                 state.history = newHistory;
+                state.cashBook = newCashBook;
 
                 localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
                 localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+                localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
 
                 renderAll();
                 if (!isSilent) showToast("Đồng bộ thành công!", "success");
@@ -639,8 +688,10 @@ async function syncData(isSilent = false) {
         if (!hasCache) {
             let localContractsFallback = localStorage.getItem('pawnshop_contracts') || "[]";
             let localHistoryFallback = localStorage.getItem('pawnshop_history') || "[]";
+            let localCashBookFallback = localStorage.getItem('pawnshop_cashbook') || "[]";
             state.contracts = JSON.parse(localContractsFallback);
             state.history = JSON.parse(localHistoryFallback);
+            state.cashBook = JSON.parse(localCashBookFallback);
             renderAll();
         }
     } finally {
@@ -946,6 +997,50 @@ async function postToAPI(payload) {
                 return { success: true, url: pdfUrl };
             }
             
+            else if (action === "addVoucher") {
+                const { error } = await supabaseClient
+                    .from('cash_book')
+                    .insert([{
+                        ma_phieu: payload.Ma_Phieu,
+                        ngay: payload.Ngay,
+                        loai: payload.Loai,
+                        hang_muc: payload.Hang_Muc,
+                        so_tien: parseFloat(payload.So_Tien) || 0,
+                        phuong_thuc: payload.Phuong_Thuc || 'Tiền mặt',
+                        ma_hd: payload.Ma_HD || null,
+                        nguoi_thuc_hien: payload.Nguoi_Thuc_Hien || null,
+                        ghi_chu: payload.Ghi_Chu || null
+                    }]);
+                if (error) throw error;
+                return { success: true };
+            }
+            
+            else if (action === "editVoucher") {
+                const { error } = await supabaseClient
+                    .from('cash_book')
+                    .update({
+                        ngay: payload.Ngay,
+                        hang_muc: payload.Hang_Muc,
+                        so_tien: parseFloat(payload.So_Tien) || 0,
+                        phuong_thuc: payload.Phuong_Thuc,
+                        ma_hd: payload.Ma_HD || null,
+                        nguoi_thuc_hien: payload.Nguoi_Thuc_Hien || null,
+                        ghi_chu: payload.Ghi_Chu || null
+                    })
+                    .eq('ma_phieu', payload.Ma_Phieu);
+                if (error) throw error;
+                return { success: true };
+            }
+            
+            else if (action === "deleteVoucher") {
+                const { error } = await supabaseClient
+                    .from('cash_book')
+                    .delete()
+                    .eq('ma_phieu', payload.Ma_Phieu);
+                if (error) throw error;
+                return { success: true };
+            }
+            
             throw new Error("Action không hợp lệ: " + action);
         } catch (err) {
             console.error("Supabase POST error:", err);
@@ -1166,6 +1261,7 @@ function renderAll() {
     renderActiveContracts();
     renderPaymentHistory();
     renderStatistics();
+    renderCashBook();
 }
 
 const statsVisibility = {
@@ -1224,11 +1320,14 @@ function renderDashboard() {
 }
 
 function renderActiveContracts() {
-    const container = document.getElementById('active-contracts-grid');
+    const gridContainer = document.getElementById('active-contracts-grid');
+    const tableContainer = document.getElementById('active-contracts-table-container');
+    const tableBody = document.getElementById('active-contracts-table-body');
     const emptyState = document.getElementById('active-empty-state');
-    if (!container) return;
+    if (!gridContainer || !tableContainer) return;
 
-    container.innerHTML = "";
+    gridContainer.innerHTML = "";
+    if (tableBody) tableBody.innerHTML = "";
 
     // Read status filter
     const filterStatus = document.getElementById('filter-status')?.value || 'Active';
@@ -1242,20 +1341,51 @@ function renderActiveContracts() {
         filteredList = state.contracts.filter(c => c.Trang_Thai === 'Liquidating');
     } else if (filterStatus === 'Liquidated') {
         filteredList = state.contracts.filter(c => c.Trang_Thai === 'Liquidated');
+    }
+
+    // Toggle container visibility and adjust main container width
+    const mainEl = document.querySelector('main');
+    if (activeContractsViewMode === 'card') {
+        gridContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+        if (mainEl) {
+            mainEl.classList.remove('max-w-none');
+            mainEl.classList.add('max-w-7xl');
+        }
     } else {
-        // 'All' - no filter, shows all
+        gridContainer.classList.add('hidden');
+        tableContainer.classList.remove('hidden');
+        if (mainEl) {
+            const isActiveTabVisible = !document.getElementById('tab-active-contracts-content').classList.contains('hidden');
+            if (isActiveTabVisible) {
+                mainEl.classList.remove('max-w-7xl');
+                mainEl.classList.add('max-w-none');
+            }
+        }
+    }
+
+    // Toggle button UI at start
+    const btnCard = document.getElementById('btn-view-card');
+    const btnExcel = document.getElementById('btn-view-excel');
+    if (activeContractsViewMode === 'card') {
+        if (btnCard) btnCard.className = "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition duration-200 bg-brand-600 text-white shadow-md shadow-brand-600/10";
+        if (btnExcel) btnExcel.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200";
+    } else {
+        if (btnCard) btnCard.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200";
+        if (btnExcel) btnExcel.className = "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition duration-200 bg-brand-600 text-white shadow-md shadow-brand-600/10";
     }
 
     if (filteredList.length === 0) {
         emptyState.classList.remove('hidden');
+        gridContainer.classList.add('hidden');
+        tableContainer.classList.add('hidden');
         return;
     }
     emptyState.classList.add('hidden');
 
     filteredList.forEach(c => {
         const stats = getContractStats(c);
-        const card = document.createElement('div');
-
+        
         const isClosed = c.Trang_Thai === 'Closed';
         const isLiquidating = c.Trang_Thai === 'Liquidating';
         const isLiquidated = c.Trang_Thai === 'Liquidated';
@@ -1263,19 +1393,14 @@ function renderActiveContracts() {
 
         let statusBadge = "";
         if (isClosed) {
-            statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`;
+            statusBadge = `<span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`;
         } else if (isLiquidating) {
-            statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ Thanh Lý</span>`;
+            statusBadge = `<span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ T.Lý</span>`;
         } else if (isLiquidated) {
-            statusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Đã Thanh Lý</span>`;
+            statusBadge = `<span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Đã T.Lý</span>`;
         } else {
-            statusBadge = `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
+            statusBadge = `<span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">Đang Cầm</span>`;
         }
-
-        card.className = `glass-card p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 ${isTerminal ? 'opacity-60 hover:opacity-100' : ''}`;
-        card.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
-        card.dataset.assetType = c.Loai_Tai_San;
-        card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
 
         // Dynamic badge style based on Loai_Tai_San
         let assetBadgeClass = "bg-slate-500/15 text-slate-300 border border-slate-500/30";
@@ -1296,9 +1421,9 @@ function renderActiveContracts() {
         let daysStatusSuffix = "";
         if (!isTerminal) {
             if (isLiquidating) {
-                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ thanh lý</span>`;
+                paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ T.Lý</span>`;
                 daysColorClass = "text-orange-400";
-                daysStatusSuffix = `(${stats.days} ngày - Chờ thanh lý)`;
+                daysStatusSuffix = `(${stats.days} ngày)`;
             } else {
                 const unpaidDays = getUnpaidDays(c, stats);
                 const isHonda = c.Loai_Tai_San === 'Honda';
@@ -1316,138 +1441,249 @@ function renderActiveContracts() {
                 } else {
                     paymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Chưa đóng lãi ${unpaidDays}n</span>`;
                     daysColorClass = "text-rose-400";
-                    daysStatusSuffix = `(${stats.days} ngày - Chưa đóng lãi)`;
+                    daysStatusSuffix = `(${stats.days} ngày - Trễ lãi)`;
                 }
             }
         }
 
-        let imgHtml = "";
-        if (c.Hinh_Anh) {
-            const thumbUrl = formatImageUrl(c.Hinh_Anh, 150);
-            const zoomUrl = formatImageUrl(c.Hinh_Anh, 1200);
-            if (thumbUrl.startsWith("http") || thumbUrl.startsWith("data:")) {
-                imgHtml = `
-                    <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-slate-950/40 group cursor-zoom-in transition-all duration-300 hover:border-white/20 shrink-0" onclick="event.stopPropagation(); openLightbox('${zoomUrl}')">
-                        <img src="${thumbUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="handleImageLoadError(this)">
-                        <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <i class="fa-solid fa-magnifying-glass text-white text-xs"></i>
+        if (activeContractsViewMode === 'card') {
+            const card = document.createElement('div');
+            card.className = `glass-card p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 ${isTerminal ? 'opacity-60 hover:opacity-100' : ''}`;
+            card.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
+            card.dataset.assetType = c.Loai_Tai_San;
+            card.dataset.searchText = `${c.Ten_Khach_Hang} ${c.So_Dien_Thoai} ${c.So_CCCD || ""} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
+
+            let cardStatusBadge = "";
+            if (isClosed) {
+                cardStatusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-950/50 text-slate-500 border border-white/5">Đã Tất Toán</span>`;
+            } else if (isLiquidating) {
+                cardStatusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ Thanh Lý</span>`;
+            } else if (isLiquidated) {
+                cardStatusBadge = `<span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Đã Thanh Lý</span>`;
+            } else {
+                cardStatusBadge = `<span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">${c.Ma_HD}</span>`;
+            }
+
+            let cardPaymentStatusBadge = "";
+            let cardDaysStatusSuffix = "";
+            if (!isTerminal) {
+                if (isLiquidating) {
+                    cardPaymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Chờ thanh lý</span>`;
+                    cardDaysStatusSuffix = `(${stats.days} ngày - Chờ thanh lý)`;
+                } else {
+                    const unpaidDays = getUnpaidDays(c, stats);
+                    const isHonda = c.Loai_Tai_San === 'Honda';
+                    const limitDue = isHonda ? 20 : 5;
+                    const limitOverdue = isHonda ? 30 : 7;
+
+                    if (unpaidDays === 0 || unpaidDays <= limitDue) {
+                        cardPaymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Bình thường</span>`;
+                        cardDaysStatusSuffix = `(${stats.days} ngày)`;
+                    } else if (unpaidDays <= limitOverdue) {
+                        cardPaymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Đến hạn</span>`;
+                        cardDaysStatusSuffix = `(${stats.days} ngày - Đến hạn)`;
+                    } else {
+                        cardPaymentStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Chưa đóng lãi ${unpaidDays}n</span>`;
+                        cardDaysStatusSuffix = `(${stats.days} ngày - Chưa đóng lãi)`;
+                    }
+                }
+            }
+
+            let imgHtml = "";
+            if (c.Hinh_Anh) {
+                const thumbUrl = formatImageUrl(c.Hinh_Anh, 150);
+                const zoomUrl = formatImageUrl(c.Hinh_Anh, 1200);
+                if (thumbUrl.startsWith("http") || thumbUrl.startsWith("data:")) {
+                    imgHtml = `
+                        <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 bg-slate-950/40 group cursor-zoom-in transition-all duration-300 hover:border-white/20 shrink-0" onclick="event.stopPropagation(); openLightbox('${zoomUrl}')">
+                            <img src="${thumbUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="handleImageLoadError(this)">
+                            <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <i class="fa-solid fa-magnifying-glass text-white text-xs"></i>
+                            </div>
+                        </div>
+                    `;
+                } else if (c.Hinh_Anh.startsWith("Lỗi")) {
+                    let cleanErr = c.Hinh_Anh.replace("Lỗi lưu ảnh: ", "").replace("Exception: ", "").replace("Truy cập bị từ chối: DriveApp.", "Quyền Drive bị từ chối");
+                    imgHtml = `
+                        <div class="w-16 h-16 rounded-xl border border-white/5 bg-slate-950/30 flex flex-col items-center justify-center text-slate-500 transition-all duration-300 hover:border-white/10 shrink-0" title="Chi tiết: ${cleanErr}">
+                            <i class="fa-solid fa-image-slash text-base text-slate-600"></i>
+                        </div>
+                    `;
+                }
+            }
+
+            let buttonsHtml = "";
+            if (isTerminal) {
+                buttonsHtml = `
+                    <button onclick="event.stopPropagation(); handleRePawn('${c.Ma_HD}')" 
+                        class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/25 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
+                    </button>
+                `;
+            } else {
+                buttonsHtml = `
+                    <button onclick="event.stopPropagation(); openPayInterestModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${stats.accrued - stats.collected})" 
+                        class="py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-brand-500/25 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
+                    </button>
+                    <button onclick="event.stopPropagation(); openCloseContractModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${c.So_Tien_Cam}, ${stats.accrued - stats.collected})"
+                        class="py-3 bg-slate-900/60 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 hover:text-white font-bold rounded-xl text-xs transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-box-open"></i> Chuộc Đồ
+                    </button>
+                `;
+            }
+
+            let contractCodeDisplay = isTerminal ? `<span class="text-xs text-slate-500 font-semibold ml-1">${c.Ma_HD}</span>` : "";
+
+            card.innerHTML = `
+                <div class="space-y-4">
+                    <div class="pb-3 border-b border-white/5 flex gap-3 justify-between items-start">
+                        <div class="space-y-2.5 flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                ${cardStatusBadge}
+                                ${cardPaymentStatusBadge}
+                                ${contractCodeDisplay}
+                            </div>
+                            <div class="space-y-1">
+                                <h4 class="text-base font-bold tracking-tight truncate ${isClosed ? 'text-slate-500 line-through' : 'text-white'}">${c.Ten_Khach_Hang}</h4>
+                                <p class="text-xs text-slate-400 flex items-center gap-2">
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-slate-950/45 text-[9px] text-slate-400 border border-white/5">
+                                        <i class="fa-solid fa-phone"></i>
+                                    </span>
+                                    <span class="font-semibold tracking-wide text-slate-300">${c.So_Dien_Thoai}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2 shrink-0">
+                            <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold ${assetBadgeClass}">${c.Loai_Tai_San}</span>
+                            ${imgHtml}
                         </div>
                     </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 bg-slate-950/50 p-3.5 rounded-2xl border border-white/5">
+                        <div>
+                            <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Vốn Cầm Gốc</p>
+                            <p class="text-base font-extrabold text-white mt-0.5">${formatVND(c.So_Tien_Cam)}</p>
+                        </div>
+                        <div class="border-l border-white/5 pl-3">
+                            <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">${isTerminal ? 'Trạng Thái' : 'Lãi Còn Nợ'}</p>
+                            <p class="text-base font-extrabold ${isTerminal ? 'text-slate-500' : 'text-amber-500'} mt-0.5">
+                                ${isClosed ? 'Tất Toán' : isLiquidated ? 'Đã Thanh Lý' : formatVND(Math.max(0, stats.accrued - stats.collected))}
+                            </p>
+                        </div>
+                    </div>
+     
+                    <div class="bg-slate-950/30 rounded-2xl border border-white/5 text-[11px] overflow-hidden">
+                        <div class="grid grid-cols-2 divide-x divide-white/5 border-b border-white/5">
+                            <div class="px-3.5 py-2.5 min-w-0">
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Chi tiết</p>
+                                <p class="text-white font-semibold truncate mt-0.5" title="${c.Chi_Tiet_Tai_San}">${c.Chi_Tiet_Tai_San}</p>
+                            </div>
+                            <div class="px-3.5 py-2.5 min-w-0">
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Ngày cầm</p>
+                                <p class="text-white font-semibold mt-0.5 flex items-center flex-wrap gap-1">
+                                    <span>${formatDateToDMY(c.Ngay_Cam)}</span>
+                                    ${isTerminal ? '' : `<span class="${daysColorClass} text-[9px] font-bold">${cardDaysStatusSuffix}</span>`}
+                                </p>
+                            </div>
+                        </div>
+                        ${isTerminal ? '' : `
+                        <div class="grid grid-cols-2 divide-x divide-white/5">
+                            <div class="px-3.5 py-2.5 min-w-0">
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Lãi tích lũy</p>
+                                <p class="text-slate-200 font-semibold mt-0.5">${formatVND(stats.accrued)}</p>
+                            </div>
+                            <div class="px-3.5 py-2.5 min-w-0">
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Đã đóng lãi</p>
+                                <p class="text-purple-400 font-semibold mt-0.5">${formatVND(stats.collected)}</p>
+                            </div>
+                        </div>
+                        `}
+                    </div>
+     
+                    ${c.Ghi_Chu ? `
+                    <div class="bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl text-[11px] text-amber-200/90 leading-relaxed mt-2">
+                        <span class="font-semibold text-amber-400">Ghi chú:</span> ${c.Ghi_Chu}
+                    </div>
+                    ` : ""}
+                </div>
+                
+                <div class="${isTerminal ? 'mt-6 pt-4 border-t border-white/5' : 'grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5'}" onclick="event.stopPropagation();">
+                    ${buttonsHtml}
+                </div>
+            `;
+            gridContainer.appendChild(card);
+        } else {
+            const tr = document.createElement('tr');
+            tr.className = `hover:bg-slate-800/30 transition duration-150 border-b border-slate-800/80 cursor-pointer ${isTerminal ? 'opacity-60 hover:opacity-100' : ''}`;
+            tr.setAttribute("onclick", `openContractDetailsModal('${c.Ma_HD}')`);
+            tr.dataset.assetType = c.Loai_Tai_San;
+            tr.dataset.searchText = `${c.Ten_Khach_Hang} ${c.So_Dien_Thoai} ${c.So_CCCD || ""} ${c.Ma_HD} ${c.Ghi_Chu || ""} ${c.Chi_Tiet_Tai_San}`.toLowerCase();
+
+            let imgHtml = "";
+            if (c.Hinh_Anh) {
+                const thumbUrl = formatImageUrl(c.Hinh_Anh, 150);
+                const zoomUrl = formatImageUrl(c.Hinh_Anh, 1200);
+                if (thumbUrl.startsWith("http") || thumbUrl.startsWith("data:")) {
+                    imgHtml = `
+                        <div class="relative w-8 h-8 rounded-lg overflow-hidden border border-white/10 bg-slate-950/40 group cursor-zoom-in transition-all duration-300 hover:border-white/20 shrink-0 inline-block ml-1.5 align-middle" onclick="event.stopPropagation(); openLightbox('${zoomUrl}')">
+                            <img src="${thumbUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="handleImageLoadError(this)">
+                        </div>
+                    `;
+                }
+            }
+
+            let buttonsHtml = "";
+            if (isTerminal) {
+                buttonsHtml = `
+                    <button onclick="event.stopPropagation(); handleRePawn('${c.Ma_HD}')" 
+                        class="px-2.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-lg text-[10px] transition duration-200">
+                        Cầm lại
+                    </button>
                 `;
-            } else if (c.Hinh_Anh.startsWith("Lỗi")) {
-                let cleanErr = c.Hinh_Anh.replace("Lỗi lưu ảnh: ", "").replace("Exception: ", "").replace("Truy cập bị từ chối: DriveApp.", "Quyền Drive bị từ chối");
-                imgHtml = `
-                    <div class="w-16 h-16 rounded-xl border border-white/5 bg-slate-950/30 flex flex-col items-center justify-center text-slate-500 transition-all duration-300 hover:border-white/10 shrink-0" title="Chi tiết: ${cleanErr}">
-                        <i class="fa-solid fa-image-slash text-base text-slate-600"></i>
+            } else {
+                buttonsHtml = `
+                    <div class="flex items-center justify-center gap-1.5">
+                        <button onclick="event.stopPropagation(); openPayInterestModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${stats.accrued - stats.collected})" 
+                            class="px-2.5 py-1.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold rounded-lg text-[10px] transition duration-200 shadow-sm">
+                            Đóng lãi
+                        </button>
+                        <button onclick="event.stopPropagation(); openCloseContractModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${c.So_Tien_Cam}, ${stats.accrued - stats.collected})"
+                            class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 text-slate-300 hover:text-white font-bold rounded-lg text-[10px] transition duration-200">
+                            Chuộc
+                        </button>
                     </div>
                 `;
             }
-        }
 
-        let buttonsHtml = "";
-        if (isTerminal) {
-            buttonsHtml = `
-                <button onclick="event.stopPropagation(); handleRePawn('${c.Ma_HD}')" 
-                    class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/25 flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-rotate-right"></i> Cầm Lại Món Này
-                </button>
+            const overdueBadge = isTerminal ? statusBadge : `
+                <div class="flex flex-col gap-0.5">
+                    ${paymentStatusBadge}
+                    <span class="text-[9px] text-slate-400 font-medium">${daysStatusSuffix}</span>
+                </div>
             `;
-        } else {
-            buttonsHtml = `
-                <button onclick="event.stopPropagation(); openPayInterestModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${stats.accrued - stats.collected})" 
-                    class="py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-brand-500/25 flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-hand-holding-dollar"></i> Đóng Lãi
-                </button>
-                <button onclick="event.stopPropagation(); openCloseContractModal('${c.Ma_HD}', '${c.Ten_Khach_Hang}', ${c.So_Tien_Cam}, ${stats.accrued - stats.collected})"
-                    class="py-3 bg-slate-900/60 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 hover:text-white font-bold rounded-xl text-xs transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-box-open"></i> Chuộc Đồ
-                </button>
+
+            tr.innerHTML = `
+                <td class="py-3 px-4 font-bold text-slate-400 text-xs">${c.Ma_HD}</td>
+                <td class="py-3 px-4 font-bold text-white whitespace-nowrap">${c.Ten_Khach_Hang}</td>
+                <td class="py-3 px-4 text-slate-300 font-semibold tracking-wide">${c.So_Dien_Thoai}</td>
+                <td class="py-3 px-4 text-slate-300 whitespace-nowrap">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold ${assetBadgeClass} mr-1">${c.Loai_Tai_San}</span>
+                    <span class="align-middle">${c.Chi_Tiet_Tai_San}</span>
+                    ${imgHtml}
+                </td>
+                <td class="py-3 px-4 font-bold text-white">${formatVND(c.So_Tien_Cam)}</td>
+                <td class="py-3 px-4 text-slate-300">${isTerminal ? '-' : formatVND(stats.accrued)}</td>
+                <td class="py-3 px-4 text-purple-400">${isTerminal ? '-' : formatVND(stats.collected)}</td>
+                <td class="py-3 px-4 font-bold ${isTerminal ? 'text-slate-500' : 'text-amber-500'}">
+                    ${isClosed ? 'Tất Toán' : isLiquidated ? 'Đã T.Lý' : formatVND(Math.max(0, stats.accrued - stats.collected))}
+                </td>
+                <td class="py-3 px-4 text-slate-400 whitespace-nowrap">${formatDateToDMY(c.Ngay_Cam)}</td>
+                <td class="py-3 px-4 text-slate-300 whitespace-nowrap">${overdueBadge}</td>
+                <td class="py-3 px-4 text-center" onclick="event.stopPropagation();">${buttonsHtml}</td>
             `;
+            tableBody.appendChild(tr);
         }
-
-        let contractCodeDisplay = isTerminal ? `<span class="text-xs text-slate-500 font-semibold ml-1">${c.Ma_HD}</span>` : "";
-
-        card.innerHTML = `
-            <div class="space-y-4">
-                <!-- Card Header & Customer Info -->
-                <div class="pb-3 border-b border-white/5 flex gap-3 justify-between items-start">
-                    <div class="space-y-2.5 flex-1 min-w-0">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            ${statusBadge}
-                            ${paymentStatusBadge}
-                            ${contractCodeDisplay}
-                        </div>
-                        <div class="space-y-1">
-                            <h4 class="text-base font-bold tracking-tight truncate ${isClosed ? 'text-slate-500 line-through' : 'text-white'}">${c.Ten_Khach_Hang}</h4>
-                            <p class="text-xs text-slate-400 flex items-center gap-2">
-                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-slate-950/45 text-[9px] text-slate-400 border border-white/5">
-                                    <i class="fa-solid fa-phone"></i>
-                                </span>
-                                <span class="font-semibold tracking-wide text-slate-300">${c.So_Dien_Thoai}</span>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col items-end gap-2 shrink-0">
-                        <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold ${assetBadgeClass}">${c.Loai_Tai_San}</span>
-                        ${imgHtml}
-                    </div>
-                </div>
-                
-                <!-- Quick Financial Highlights (Gốc & Nợ Lãi) -->
-                <div class="grid grid-cols-2 gap-2 bg-slate-950/50 p-3.5 rounded-2xl border border-white/5">
-                    <div>
-                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Vốn Cầm Gốc</p>
-                        <p class="text-base font-extrabold text-white mt-0.5">${formatVND(c.So_Tien_Cam)}</p>
-                    </div>
-                    <div class="border-l border-white/5 pl-3">
-                        <p class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">${isTerminal ? 'Trạng Thái' : 'Lãi Còn Nợ'}</p>
-                        <p class="text-base font-extrabold ${isTerminal ? 'text-slate-500' : 'text-amber-500'} mt-0.5">
-                            ${isClosed ? 'Tất Toán' : isLiquidated ? 'Đã Thanh Lý' : formatVND(Math.max(0, stats.accrued - stats.collected))}
-                        </p>
-                    </div>
-                </div>
- 
-                <!-- Asset & Interest Breakdown Grid -->
-                <div class="bg-slate-950/30 rounded-2xl border border-white/5 text-[11px] overflow-hidden">
-                    <div class="grid grid-cols-2 divide-x divide-white/5 border-b border-white/5">
-                        <div class="px-3.5 py-2.5 min-w-0">
-                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Chi tiết</p>
-                            <p class="text-white font-semibold truncate mt-0.5" title="${c.Chi_Tiet_Tai_San}">${c.Chi_Tiet_Tai_San}</p>
-                        </div>
-                        <div class="px-3.5 py-2.5 min-w-0">
-                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Ngày cầm</p>
-                            <p class="text-white font-semibold mt-0.5 flex items-center flex-wrap gap-1">
-                                <span>${formatDateToDMY(c.Ngay_Cam)}</span>
-                                ${isTerminal ? '' : `<span class="${daysColorClass} text-[9px] font-bold">${daysStatusSuffix}</span>`}
-                            </p>
-                        </div>
-                    </div>
-                    ${isTerminal ? '' : `
-                    <div class="grid grid-cols-2 divide-x divide-white/5">
-                        <div class="px-3.5 py-2.5 min-w-0">
-                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Lãi tích lũy</p>
-                            <p class="text-slate-200 font-semibold mt-0.5">${formatVND(stats.accrued)}</p>
-                        </div>
-                        <div class="px-3.5 py-2.5 min-w-0">
-                            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Đã đóng lãi</p>
-                            <p class="text-purple-400 font-semibold mt-0.5">${formatVND(stats.collected)}</p>
-                        </div>
-                    </div>
-                    `}
-                </div>
- 
-                ${c.Ghi_Chu ? `
-                <div class="bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl text-[11px] text-amber-200/90 leading-relaxed mt-2">
-                    <span class="font-semibold text-amber-400">Ghi chú:</span> ${c.Ghi_Chu}
-                </div>
-                ` : ""}
-            </div>
-            
-            <div class="${isTerminal ? 'mt-6 pt-4 border-t border-white/5' : 'grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5'}" onclick="event.stopPropagation();">
-                ${buttonsHtml}
-            </div>
-        `;
-        container.appendChild(card);
     });
 
     // Auto-apply search and asset filters
@@ -2099,6 +2335,9 @@ async function handleCreateContract(e) {
             state.contracts.push(newContract);
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
 
+            // Tự động ghi nhận một phiếu chi giải ngân
+            autoRecordVoucher("Chi", "Vốn giải ngân", amountVal, "Tiền mặt", newHdId, `Giải ngân gốc hợp đồng cầm đồ ${newHdId} - Khách hàng: ${name}`);
+
             document.getElementById('preview-id').innerText = newHdId;
 
             showToast("Đang tải hóa đơn PDF...", "info");
@@ -2251,6 +2490,9 @@ async function handlePayInterest(e) {
             state.history.push(newPayment);
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
 
+            // Tự động ghi nhận một phiếu thu tiền lãi
+            autoRecordVoucher("Thu", "Thu lãi", amountVal, "Tiền mặt", hdId, `Thu lãi hợp đồng ${hdId} - Khách hàng: ${name} | ${notes}`);
+
             closePayInterestModal();
             showToast("Đã ghi nhận đóng lãi!", "success");
             switchTab('payment-history');
@@ -2360,6 +2602,9 @@ async function handleDirectPayment(e) {
             state.history.push(newPayment);
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
 
+            // Tự động ghi nhận một phiếu thu ngoài vào sổ quỹ
+            autoRecordVoucher("Thu", "Thu ngoài", capitalVal + profitVal, "Tiền mặt", "THU_NGOAI", `Thu ngoài (Vốn: ${formatVND(capitalVal)} | Lời: ${formatVND(profitVal)}) | ${userNotes}`);
+
             closeDirectPaymentModal();
             showToast("Đã ghi nhận giao dịch thu ngoài thành công!", "success");
             switchTab('payment-history');
@@ -2467,6 +2712,20 @@ async function handleCloseContract(e) {
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
             localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
 
+            // Tự động ghi nhận một phiếu thu hồi vốn gốc và tiền lãi tất toán
+            const contract = state.contracts.find(c => c.Ma_HD === hdId);
+            const principalVal = contract ? (parseFloat(contract.So_Tien_Cam) || 0) : 0;
+            const interestVal = Math.max(0, amountVal - principalVal);
+            
+            if (principalVal > 0) {
+                autoRecordVoucher("Thu", "Thu hồi vốn", principalVal, "Tiền mặt", hdId, `Thu hồi gốc tất toán hợp đồng ${hdId} - Khách: ${name}`);
+            }
+            if (interestVal > 0) {
+                autoRecordVoucher("Thu", "Thu lãi", interestVal, "Tiền mặt", hdId, `Thu lãi tất toán hợp đồng ${hdId} - Khách: ${name}`);
+            } else if (amountVal > 0 && principalVal === 0) {
+                autoRecordVoucher("Thu", "Thu hồi vốn", amountVal, "Tiền mặt", hdId, `Thu hồi vốn tất toán hợp đồng ${hdId} - Khách: ${name}`);
+            }
+
             closeCloseContractModal();
             showToast("Tất toán hợp đồng thành công!", "success");
             switchTab('payment-history');
@@ -2492,21 +2751,42 @@ function filterActiveContracts() {
     const query = document.getElementById('search-active').value.toLowerCase().trim();
     const filterAsset = document.getElementById('filter-asset').value;
 
-    const cards = document.getElementById('active-contracts-grid').children;
     let visibleCount = 0;
 
-    for (let card of cards) {
-        const searchText = card.dataset.searchText || "";
-        const assetType = card.dataset.assetType || "";
+    if (activeContractsViewMode === 'card') {
+        const cards = document.getElementById('active-contracts-grid').children;
+        for (let card of cards) {
+            const searchText = card.dataset.searchText || "";
+            const assetType = card.dataset.assetType || "";
 
-        const isAssetMatch = filterAsset === 'All' || assetType === filterAsset;
-        const isSearchMatch = !query || searchText.includes(query);
+            const isAssetMatch = filterAsset === 'All' || assetType === filterAsset;
+            const isSearchMatch = !query || searchText.includes(query);
 
-        if (isSearchMatch && isAssetMatch) {
-            card.classList.remove('hidden');
-            visibleCount++;
-        } else {
-            card.classList.add('hidden');
+            if (isSearchMatch && isAssetMatch) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        }
+    } else {
+        const tableBody = document.getElementById('active-contracts-table-body');
+        if (tableBody) {
+            const rows = tableBody.children;
+            for (let row of rows) {
+                const searchText = row.dataset.searchText || "";
+                const assetType = row.dataset.assetType || "";
+
+                const isAssetMatch = filterAsset === 'All' || assetType === filterAsset;
+                const isSearchMatch = !query || searchText.includes(query);
+
+                if (isSearchMatch && isAssetMatch) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    row.classList.add('hidden');
+                }
+            }
         }
     }
 
@@ -2516,6 +2796,25 @@ function filterActiveContracts() {
     } else {
         emptyState.classList.add('hidden');
     }
+}
+
+function changeActiveContractsViewMode(mode) {
+    activeContractsViewMode = mode;
+    localStorage.setItem('pawnshop_view_mode', mode);
+    
+    // Adjust main container width
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+        if (mode === 'excel') {
+            mainEl.classList.remove('max-w-7xl');
+            mainEl.classList.add('max-w-none');
+        } else {
+            mainEl.classList.remove('max-w-none');
+            mainEl.classList.add('max-w-7xl');
+        }
+    }
+    
+    renderActiveContracts();
 }
 
 function filterHistory() {
@@ -2757,8 +3056,20 @@ function openContractDetailsModal(hdId) {
                     showToast(`Đã xóa hợp đồng ${hdId} thành công!`, "success");
                     state.contracts = state.contracts.filter(c => c.Ma_HD !== hdId);
                     state.history = state.history.filter(h => h.Ma_HD !== hdId);
+                    
+                    const deletedVouchers = state.cashBook.filter(v => v.Ma_HD === hdId);
+                    state.cashBook = state.cashBook.filter(v => v.Ma_HD !== hdId);
+                    
                     localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
                     localStorage.setItem('pawnshop_history', JSON.stringify(state.history));
+                    localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
+
+                    if (!isDemoMode && deletedVouchers.length > 0) {
+                        for (let v of deletedVouchers) {
+                            postToAPI({ action: "deleteVoucher", Ma_Phieu: v.Ma_Phieu });
+                        }
+                    }
+
                     renderAll();
                 } else {
                     showToast("Lỗi khi xóa hợp đồng: " + (res.error || "Không xác định"), "error");
@@ -2879,6 +3190,18 @@ function switchTab(tabId) {
 
     document.getElementById(`tab-${tabId}-content`).classList.remove('hidden');
 
+    // Adjust main container width dynamically based on active tab and view mode
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+        if (tabId === 'active-contracts' && activeContractsViewMode === 'excel') {
+            mainEl.classList.remove('max-w-7xl');
+            mainEl.classList.add('max-w-none');
+        } else {
+            mainEl.classList.remove('max-w-none');
+            mainEl.classList.add('max-w-7xl');
+        }
+    }
+
     // Ẩn thanh thống kê ở tab Lập hợp đồng mới, hiện ở các tab khác
     const heroBanner = document.getElementById('dashboard-hero-banner');
     if (heroBanner) {
@@ -2901,6 +3224,10 @@ function switchTab(tabId) {
 
     if (tabId === 'statistics') {
         renderStatistics();
+    }
+
+    if (tabId === 'accounting') {
+        renderCashBook();
     }
 }
 
@@ -3603,6 +3930,18 @@ async function handleLiquidateContract(e) {
                 };
 
                 state.history.push(newPayment);
+
+                // Tách biệt phần vốn gốc và lãi thanh lý (nếu bán thanh lý được giá cao hơn vốn)
+                const contract = state.contracts.find(c => c.Ma_HD === hdId);
+                const principalVal = contract ? (parseFloat(contract.So_Tien_Cam) || 0) : 0;
+                
+                if (amountVal > principalVal) {
+                    const interestVal = amountVal - principalVal;
+                    autoRecordVoucher("Thu", "Thu hồi vốn", principalVal, "Tiền mặt", hdId, `Thu hồi gốc thanh lý tài sản HĐ ${hdId} - Khách: ${name}`);
+                    autoRecordVoucher("Thu", "Thu lãi", interestVal, "Tiền mặt", hdId, `Thu lãi chênh lệch thanh lý tài sản HĐ ${hdId} - Khách: ${name}`);
+                } else {
+                    autoRecordVoucher("Thu", "Thu hồi vốn", amountVal, "Tiền mặt", hdId, `Thu hồi vốn thanh lý tài sản HĐ ${hdId} - Khách: ${name}`);
+                }
             }
 
             localStorage.setItem('pawnshop_contracts', JSON.stringify(state.contracts));
@@ -3673,4 +4012,1014 @@ function toggleTheme() {
         if (text) text.innerText = "Giao diện tối";
         showToast("Đã chuyển sang Giao diện sáng!", "success");
     }
+}
+
+// ==================== CASH BOOK / ACCOUNTING FUNCTIONS ====================
+
+function generateNextVoucherId(type) {
+    const prefix = type === "Thu" ? "PT" : "PC";
+    let maxNum = 0;
+    state.cashBook.forEach(v => {
+        if (v.Loai === type && v.Ma_Phieu && v.Ma_Phieu.startsWith(prefix)) {
+            const num = parseInt(v.Ma_Phieu.replace(prefix, ""), 10);
+            if (!isNaN(num) && num > maxNum) {
+                maxNum = num;
+            }
+        }
+    });
+    return prefix + String(maxNum + 1).padStart(4, "0");
+}
+
+async function autoRecordVoucher(type, category, amount, method, hdId, note) {
+    const maPhieu = generateNextVoucherId(type);
+    const today = new Date().toISOString().split('T')[0];
+    const username = sessionStorage.getItem('pawnshop_username') || "system";
+    
+    const payload = {
+        action: "addVoucher",
+        Ma_Phieu: maPhieu,
+        Ngay: today,
+        Loai: type,
+        Hang_Muc: category,
+        So_Tien: amount,
+        Phuong_Thuc: method || "Tiền mặt",
+        Ma_HD: hdId || "",
+        Nguoi_Thuc_Hien: username,
+        Ghi_Chu: note || ""
+    };
+    
+    // Add to local state first
+    const newVoucher = {
+        Ma_Phieu: maPhieu,
+        Ngay: today,
+        Loai: type,
+        Hang_Muc: category,
+        So_Tien: amount,
+        Phuong_Thuc: method || "Tiền mặt",
+        Ma_HD: hdId || "",
+        Nguoi_Thuc_Hien: username,
+        Ghi_Chu: note || ""
+    };
+    state.cashBook.push(newVoucher);
+    localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
+    
+    // Post to API (runs asynchronously/silently)
+    try {
+        await postToAPI(payload);
+        console.log(`Auto recorded voucher ${maPhieu} (${type}) successfully.`);
+    } catch (err) {
+        console.error("Lỗi khi tự động ghi nhận phiếu thu/chi:", err);
+    }
+}
+
+function renderCashBook() {
+    const tableBody = document.getElementById('accounting-table-body');
+    const emptyState = document.getElementById('accounting-empty-state');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = "";
+
+    // 1. Calculate stats over the ENTIRE cash book
+    let totalBalance = 0;
+    let cashBalance = 0;
+    let bankBalance = 0;
+
+    let totalIncome = 0;
+    let cashIncome = 0;
+    let bankIncome = 0;
+
+    let totalExpense = 0;
+    let cashExpense = 0;
+    let bankExpense = 0;
+
+    let netProfit = 0;
+
+    state.cashBook.forEach(v => {
+        const amount = parseFloat(v.So_Tien) || 0;
+        const isCash = v.Phuong_Thuc === "Tiền mặt";
+        
+        if (v.Loai === "Thu") {
+            totalIncome += amount;
+            if (isCash) cashIncome += amount;
+            else bankIncome += amount;
+            
+            // Profit eligibility
+            if (v.Hang_Muc === "Thu hồi vốn" || v.Hang_Muc === "Chuyển quỹ" || v.Hang_Muc === "Vốn góp đầu kỳ / Số dư đầu kỳ") {
+                // Not operating revenue
+            } else if (v.Hang_Muc === "Thu ngoài") {
+                const profitMatch = v.Ghi_Chu.match(/Lời:\s*([\d,.]+)/);
+                if (profitMatch) {
+                    netProfit += parseFloat(profitMatch[1].replace(/,/g, '')) || 0;
+                } else {
+                    netProfit += amount;
+                }
+            } else {
+                netProfit += amount; // Thu lãi, v.v.
+            }
+        } else if (v.Loai === "Chi") {
+            totalExpense += amount;
+            if (isCash) cashExpense += amount;
+            else bankExpense += amount;
+            
+            // Expense eligibility (all except Vốn giải ngân and Chuyển quỹ)
+            if (v.Hang_Muc !== "Vốn giải ngân" && v.Hang_Muc !== "Chuyển quỹ") {
+                netProfit -= amount;
+            }
+        }
+    });
+
+    totalBalance = totalIncome - totalExpense;
+    cashBalance = cashIncome - cashExpense;
+    bankBalance = bankIncome - bankExpense;
+
+    // Update KPI UI
+    const totalBalanceEl = document.getElementById('stat-accounting-total-balance');
+    const cashBalanceEl = document.getElementById('stat-accounting-cash-balance');
+    const bankBalanceEl = document.getElementById('stat-accounting-bank-balance');
+
+    const totalIncomeEl = document.getElementById('stat-accounting-total-income');
+    const cashIncomeEl = document.getElementById('stat-accounting-cash-income');
+    const bankIncomeEl = document.getElementById('stat-accounting-bank-income');
+
+    const totalExpenseEl = document.getElementById('stat-accounting-total-expense');
+    const cashExpenseEl = document.getElementById('stat-accounting-cash-expense');
+    const bankExpenseEl = document.getElementById('stat-accounting-bank-expense');
+
+    const netProfitEl = document.getElementById('stat-accounting-net-profit');
+
+    if (totalBalanceEl) totalBalanceEl.innerText = formatVND(totalBalance);
+    if (cashBalanceEl) cashBalanceEl.innerText = formatVND(cashBalance);
+    if (bankBalanceEl) bankBalanceEl.innerText = formatVND(bankBalance);
+
+    if (totalIncomeEl) totalIncomeEl.innerText = formatVND(totalIncome);
+    if (cashIncomeEl) cashIncomeEl.innerText = formatVND(cashIncome);
+    if (bankIncomeEl) bankIncomeEl.innerText = formatVND(bankIncome);
+
+    if (totalExpenseEl) totalExpenseEl.innerText = formatVND(totalExpense);
+    if (cashExpenseEl) cashExpenseEl.innerText = formatVND(cashExpense);
+    if (bankExpenseEl) bankExpenseEl.innerText = formatVND(bankExpense);
+
+    if (netProfitEl) {
+        netProfitEl.innerText = formatVND(netProfit);
+        if (netProfit < 0) {
+            netProfitEl.className = "text-xl sm:text-2xl font-black text-rose-400 mt-2 truncate";
+        } else {
+            netProfitEl.className = "text-xl sm:text-2xl font-black text-amber-400 mt-2 truncate";
+        }
+    }
+
+    if (state.cashBook.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    emptyState.classList.add('hidden');
+
+    const sorted = [...state.cashBook].sort((a, b) => {
+        const dateCompare = b.Ngay.localeCompare(a.Ngay);
+        if (dateCompare !== 0) return dateCompare;
+        return b.Ma_Phieu.localeCompare(a.Ma_Phieu);
+    });
+
+    sorted.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/30 transition duration-150 border-b border-slate-800/80";
+        tr.dataset.date = v.Ngay || "";
+        tr.dataset.type = v.Loai || "";
+        tr.dataset.category = v.Hang_Muc || "";
+        tr.dataset.searchText = `${v.Ma_Phieu} ${v.Ngay} ${v.Loai} ${v.Hang_Muc} ${v.Phuong_Thuc} ${v.Ma_HD || ""} ${v.Nguoi_Thuc_Hien || ""} ${v.Ghi_Chu || ""}`.toLowerCase();
+
+        const typeColor = v.Loai === "Thu" ? "text-emerald-400 font-bold" : "text-rose-400 font-bold";
+        const amountDisplay = (v.Loai === "Thu" ? "+" : "-") + formatVND(v.So_Tien);
+        const amountColor = v.Loai === "Thu" ? "text-emerald-400 font-extrabold" : "text-rose-400 font-extrabold";
+
+        tr.innerHTML = `
+            <td class="py-3 px-4 font-bold text-slate-400">${v.Ma_Phieu}</td>
+            <td class="py-3 px-4 whitespace-nowrap">${formatDateToDMY(v.Ngay)}</td>
+            <td class="py-3 px-4 ${typeColor}">${v.Loai}</td>
+            <td class="py-3 px-4 font-semibold">${v.Hang_Muc}</td>
+            <td class="py-3 px-4 text-right ${amountColor}">${amountDisplay}</td>
+            <td class="py-3 px-4">${v.Phuong_Thuc}</td>
+            <td class="py-3 px-4 text-brand-400 font-bold cursor-pointer hover:underline" onclick="if('${v.Ma_HD}' && '${v.Ma_HD}' !== 'THU_NGOAI') openContractDetailsModal('${v.Ma_HD}')">${v.Ma_HD || '-'}</td>
+            <td class="py-3 px-4 whitespace-nowrap">${v.Nguoi_Thuc_Hien || '-'}</td>
+            <td class="py-3 px-4 max-w-[150px] truncate" title="${v.Ghi_Chu || ''}">${v.Ghi_Chu || '-'}</td>
+            <td class="py-3 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                    <button onclick="printVoucher('${v.Ma_Phieu}')" class="p-1 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 rounded transition duration-150" title="In phiếu"><i class="fa-solid fa-print text-[10px]"></i></button>
+                    <button onclick="openVoucherModal('${v.Loai}', '${v.Ma_Phieu}')" class="p-1 bg-amber-600/10 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/20 rounded transition duration-150" title="Sửa phiếu"><i class="fa-solid fa-edit text-[10px]"></i></button>
+                    <button onclick="deleteVoucher('${v.Ma_Phieu}')" class="p-1 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 rounded transition duration-150" title="Xóa phiếu"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    filterAccounting();
+}
+
+function filterAccounting() {
+    const query = document.getElementById('search-accounting').value.toLowerCase().trim();
+    const startVal = document.getElementById('accounting-date-start').value;
+    const endVal = document.getElementById('accounting-date-end').value;
+    const typeFilter = document.getElementById('accounting-type-filter').value;
+    const catFilter = document.getElementById('accounting-category-filter').value;
+
+    const rows = document.getElementById('accounting-table-body').children;
+    let visibleCount = 0;
+
+    for (let row of rows) {
+        const searchText = row.dataset.searchText || "";
+        const rowDate = row.dataset.date || "";
+        const rowType = row.dataset.type || "";
+        const rowCategory = row.dataset.category || "";
+
+        const isSearchMatch = !query || searchText.includes(query);
+        const isDateMatch = (!startVal || rowDate >= startVal) && (!endVal || rowDate <= endVal);
+        const isTypeMatch = typeFilter === 'All' || rowType === typeFilter;
+        const isCategoryMatch = catFilter === 'All' || rowCategory === catFilter;
+
+        if (isSearchMatch && isDateMatch && isTypeMatch && isCategoryMatch) {
+            row.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            row.classList.add('hidden');
+        }
+    }
+
+    const emptyState = document.getElementById('accounting-empty-state');
+    if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+    }
+}
+
+function openVoucherModal(type, voucherId = null) {
+    const titleEl = document.getElementById('voucher-modal-title');
+    const idInput = document.getElementById('modal-voucher-id');
+    const typeInput = document.getElementById('modal-voucher-type');
+    const dateInput = document.getElementById('modal-voucher-date');
+    const methodInput = document.getElementById('modal-voucher-method');
+    const catSelect = document.getElementById('modal-voucher-category-select');
+    const catCustom = document.getElementById('modal-voucher-category-custom');
+    const amountInput = document.getElementById('modal-voucher-amount');
+    const hdInput = document.getElementById('modal-voucher-hd');
+    const userInput = document.getElementById('modal-voucher-user');
+    const notesInput = document.getElementById('modal-voucher-notes');
+
+    idInput.value = voucherId || "";
+    typeInput.value = type;
+
+    catSelect.innerHTML = "";
+    const cats = type === "Thu" ? 
+        ["Thu hồi vốn", "Thu lãi", "Thu ngoài", "Vốn góp đầu kỳ / Số dư đầu kỳ", "Khác"] : 
+        ["Vốn giải ngân", "Chi mặt bằng", "Chi điện nước", "Chi lương", "Chi quảng cáo", "Chi ngoài", "Khác"];
+    
+    cats.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.innerText = c;
+        catSelect.appendChild(opt);
+    });
+
+    if (voucherId) {
+        const v = state.cashBook.find(item => item.Ma_Phieu === voucherId);
+        if (!v) return;
+
+        titleEl.innerHTML = `<i class="fa-solid fa-edit text-amber-500"></i> Sửa Phiếu: <span class="text-amber-400 font-extrabold">${voucherId}</span>`;
+        dateInput.value = v.Ngay || "";
+        methodInput.value = v.Phuong_Thuc || "Tiền mặt";
+        
+        if (cats.includes(v.Hang_Muc)) {
+            catSelect.value = v.Hang_Muc;
+            catCustom.classList.add('hidden');
+            catCustom.value = "";
+            catCustom.required = false;
+        } else {
+            catSelect.value = "Khác";
+            catCustom.classList.remove('hidden');
+            catCustom.value = v.Hang_Muc;
+            catCustom.required = true;
+        }
+
+        amountInput.value = formatNumber(v.So_Tien);
+        hdInput.value = v.Ma_HD || "";
+        userInput.value = v.Nguoi_Thuc_Hien || "";
+        notesInput.value = v.Ghi_Chu || "";
+    } else {
+        const titleColor = type === "Thu" ? "text-emerald-500" : "text-rose-500";
+        titleEl.innerHTML = `<i class="fa-solid fa-file-invoice-dollar ${titleColor}"></i> Lập Phiếu ${type}`;
+        
+        dateInput.value = new Date().toISOString().split('T')[0];
+        methodInput.value = "Tiền mặt";
+        catSelect.value = cats[0];
+        catCustom.classList.add('hidden');
+        catCustom.value = "";
+        catCustom.required = false;
+        amountInput.value = "";
+        hdInput.value = "";
+        userInput.value = sessionStorage.getItem('pawnshop_username') || "camdo86";
+        notesInput.value = "";
+    }
+
+    document.getElementById('voucher-modal').classList.remove('hidden');
+}
+
+function closeVoucherModal() {
+    document.getElementById('voucher-modal').classList.add('hidden');
+}
+
+function handleVoucherCategoryChange() {
+    const catSelect = document.getElementById('modal-voucher-category-select');
+    const catCustom = document.getElementById('modal-voucher-category-custom');
+    if (catSelect.value === "Khác") {
+        catCustom.classList.remove('hidden');
+        catCustom.required = true;
+    } else {
+        catCustom.classList.add('hidden');
+        catCustom.value = "";
+        catCustom.required = false;
+    }
+}
+
+async function handleSaveVoucher(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+    }
+    isSubmitting = true;
+
+    try {
+        const id = document.getElementById('modal-voucher-id').value;
+        const type = document.getElementById('modal-voucher-type').value;
+        const date = document.getElementById('modal-voucher-date').value;
+        const method = document.getElementById('modal-voucher-method').value;
+        const catSelect = document.getElementById('modal-voucher-category-select').value;
+        const catCustom = document.getElementById('modal-voucher-category-custom').value.trim();
+        const rawAmount = document.getElementById('modal-voucher-amount').value.replace(/,/g, '');
+        const amount = parseFloat(rawAmount) || 0;
+        const hd = document.getElementById('modal-voucher-hd').value.trim();
+        const user = document.getElementById('modal-voucher-user').value.trim();
+        const notes = document.getElementById('modal-voucher-notes').value.trim();
+
+        const category = catSelect === "Khác" ? catCustom : catSelect;
+
+        if (!date || !category || amount <= 0) {
+            showToast("Vui lòng nhập đầy đủ thông tin hợp lệ!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+
+        showLoading(true, id ? "Đang cập nhật phiếu..." : "Đang tạo phiếu mới...");
+
+        let payload = {};
+        if (id) {
+            payload = {
+                action: "editVoucher",
+                Ma_Phieu: id,
+                Ngay: date,
+                Hang_Muc: category,
+                So_Tien: amount,
+                Phuong_Thuc: method,
+                Ma_HD: hd,
+                Nguoi_Thuc_Hien: user,
+                Ghi_Chu: notes
+            };
+        } else {
+            const maPhieu = generateNextVoucherId(type);
+            payload = {
+                action: "addVoucher",
+                Ma_Phieu: maPhieu,
+                Ngay: date,
+                Loai: type,
+                Hang_Muc: category,
+                So_Tien: amount,
+                Phuong_Thuc: method,
+                Ma_HD: hd,
+                Nguoi_Thuc_Hien: user,
+                Ghi_Chu: notes
+            };
+        }
+
+        const res = await postToAPI(payload);
+
+        if (res.success) {
+            if (id) {
+                const idx = state.cashBook.findIndex(v => v.Ma_Phieu === id);
+                if (idx > -1) {
+                    state.cashBook[idx].Ngay = date;
+                    state.cashBook[idx].Hang_Muc = category;
+                    state.cashBook[idx].So_Tien = amount;
+                    state.cashBook[idx].Phuong_Thuc = method;
+                    state.cashBook[idx].Ma_HD = hd;
+                    state.cashBook[idx].Nguoi_Thuc_Hien = user;
+                    state.cashBook[idx].Ghi_Chu = notes;
+                }
+                showToast(`Đã cập nhật phiếu ${id} thành công!`, "success");
+            } else {
+                const newVoucher = {
+                    Ma_Phieu: payload.Ma_Phieu,
+                    Ngay: date,
+                    Loai: type,
+                    Hang_Muc: category,
+                    So_Tien: amount,
+                    Phuong_Thuc: method,
+                    Ma_HD: hd,
+                    Nguoi_Thuc_Hien: user,
+                    Ghi_Chu: notes
+                };
+                state.cashBook.push(newVoucher);
+                showToast(`Đã tạo phiếu ${payload.Ma_Phieu} thành công!`, "success");
+            }
+
+            localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
+            closeVoucherModal();
+            renderCashBook();
+        } else {
+            showToast("Lỗi khi lưu phiếu: " + (res.error || "Lỗi API"), "error");
+        }
+    } catch (error) {
+        console.error("Lỗi trong handleSaveVoucher:", error);
+        showToast("Lỗi hệ thống khi lưu phiếu!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
+    }
+}
+
+async function deleteVoucher(voucherId) {
+    if (confirm(`Bạn có chắc chắn muốn xóa phiếu ${voucherId} không?`)) {
+        showLoading(true, `Đang xóa phiếu ${voucherId}...`);
+        try {
+            const res = await postToAPI({ action: "deleteVoucher", Ma_Phieu: voucherId });
+            if (res.success) {
+                state.cashBook = state.cashBook.filter(v => v.Ma_Phieu !== voucherId);
+                localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
+                showToast(`Đã xóa phiếu ${voucherId} thành công!`, "success");
+                renderCashBook();
+            } else {
+                showToast("Lỗi khi xóa phiếu: " + (res.error || "Không xác định"), "error");
+            }
+        } catch (err) {
+            console.error("Error deleting voucher:", err);
+            showToast("Đã xảy ra lỗi hệ thống khi xóa phiếu!", "error");
+        } finally {
+            showLoading(false);
+            syncData();
+        }
+    }
+}
+
+function exportAccountingToExcel() {
+    const query = document.getElementById('search-accounting').value.toLowerCase().trim();
+    const startVal = document.getElementById('accounting-date-start').value;
+    const endVal = document.getElementById('accounting-date-end').value;
+    const typeFilter = document.getElementById('accounting-type-filter').value;
+    const catFilter = document.getElementById('accounting-category-filter').value;
+
+    const filtered = state.cashBook.filter(v => {
+        const searchText = `${v.Ma_Phieu} ${v.Ngay} ${v.Loai} ${v.Hang_Muc} ${v.Phuong_Thuc} ${v.Ma_HD || ""} ${v.Nguoi_Thuc_Hien || ""} ${v.Ghi_Chu || ""}`.toLowerCase();
+        const rowDate = v.Ngay || "";
+        const rowType = v.Loai || "";
+        const rowCategory = v.Hang_Muc || "";
+
+        const isSearchMatch = !query || searchText.includes(query);
+        const isDateMatch = (!startVal || rowDate >= startVal) && (!endVal || rowDate <= endVal);
+        const isTypeMatch = typeFilter === 'All' || rowType === typeFilter;
+        const isCategoryMatch = catFilter === 'All' || rowCategory === catFilter;
+
+        return isSearchMatch && isDateMatch && isTypeMatch && isCategoryMatch;
+    });
+
+    if (filtered.length === 0) {
+        showToast("Không có dữ liệu phù hợp để xuất Excel!", "warning");
+        return;
+    }
+
+    const sorted = filtered.sort((a, b) => {
+        const dateCompare = b.Ngay.localeCompare(a.Ngay);
+        if (dateCompare !== 0) return dateCompare;
+        return b.Ma_Phieu.localeCompare(a.Ma_Phieu);
+    });
+
+    let csvContent = "\uFEFF";
+    csvContent += "Mã Phiếu,Ngày,Loại Phiếu,Hạng Mục,Số Tiền (VND),Phương Thức,Mã HĐ,Người Thực Hiện,Ghi Chú\n";
+
+    sorted.forEach(v => {
+        const row = [
+            v.Ma_Phieu,
+            formatDateToDMY(v.Ngay),
+            v.Loai,
+            v.Hang_Muc,
+            v.So_Tien,
+            v.Phuong_Thuc,
+            v.Ma_HD || "",
+            v.Nguoi_Thuc_Hien || "",
+            `"${(v.Ghi_Chu || "").replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `SoQuyKeToan_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast("Đã tải xuống file CSV sổ quỹ kế toán!", "success");
+}
+
+// ==================== INTERNAL TRANSFER & PRINTING ====================
+
+function openTransferModal() {
+    const dateInput = document.getElementById('modal-transfer-date');
+    const userInput = document.getElementById('modal-transfer-user');
+    const sourceSelect = document.getElementById('modal-transfer-source');
+    const targetSelect = document.getElementById('modal-transfer-target');
+    const amountInput = document.getElementById('modal-transfer-amount');
+    const notesInput = document.getElementById('modal-transfer-notes');
+
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    if (userInput) userInput.value = sessionStorage.getItem('pawnshop_username') || "camdo86";
+    if (sourceSelect) sourceSelect.value = "Tiền mặt";
+    if (targetSelect) targetSelect.value = "Chuyển khoản";
+    if (amountInput) amountInput.value = "";
+    if (notesInput) notesInput.value = "";
+
+    const modal = document.getElementById('transfer-modal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeTransferModal() {
+    const modal = document.getElementById('transfer-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function handleTransferSourceChange() {
+    const sourceVal = document.getElementById('modal-transfer-source').value;
+    const targetSelect = document.getElementById('modal-transfer-target');
+    if (!targetSelect) return;
+    if (sourceVal === "Tiền mặt") {
+        targetSelect.value = "Chuyển khoản";
+    } else {
+        targetSelect.value = "Tiền mặt";
+    }
+}
+
+async function handleSaveTransfer(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+    }
+    isSubmitting = true;
+
+    try {
+        const date = document.getElementById('modal-transfer-date').value;
+        const user = document.getElementById('modal-transfer-user').value.trim();
+        const source = document.getElementById('modal-transfer-source').value;
+        const target = document.getElementById('modal-transfer-target').value;
+        const rawAmount = document.getElementById('modal-transfer-amount').value.replace(/,/g, '');
+        const amount = parseFloat(rawAmount) || 0;
+        const notes = document.getElementById('modal-transfer-notes').value.trim();
+
+        if (!date || amount <= 0 || source === target) {
+            showToast("Vui lòng nhập đầy đủ thông tin hợp lệ!", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+
+        showLoading(true, "Đang thực hiện chuyển quỹ...");
+
+        // 1. Create Chi voucher (from source)
+        const maPhieuChi = generateNextVoucherId("Chi");
+        const payloadChi = {
+            action: "addVoucher",
+            Ma_Phieu: maPhieuChi,
+            Ngay: date,
+            Loai: "Chi",
+            Hang_Muc: "Chuyển quỹ",
+            So_Tien: amount,
+            Phuong_Thuc: source,
+            Ma_HD: "",
+            Nguoi_Thuc_Hien: user,
+            Ghi_Chu: `Chuyển quỹ sang ${target}. ${notes}`.trim()
+        };
+
+        const resChi = await postToAPI(payloadChi);
+
+        if (!resChi.success) {
+            showToast("Lỗi khi tạo phiếu chi chuyển quỹ: " + (resChi.error || "Lỗi API"), "error");
+            showLoading(false);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+            isSubmitting = false;
+            return;
+        }
+
+        // Add Chi to local state
+        const localChi = {
+            Ma_Phieu: maPhieuChi,
+            Ngay: date,
+            Loai: "Chi",
+            Hang_Muc: "Chuyển quỹ",
+            So_Tien: amount,
+            Phuong_Thuc: source,
+            Ma_HD: "",
+            Nguoi_Thuc_Hien: user,
+            Ghi_Chu: `Chuyển quỹ sang ${target}. ${notes}`.trim()
+        };
+        state.cashBook.push(localChi);
+
+        // 2. Create Thu voucher (to target)
+        const maPhieuThu = generateNextVoucherId("Thu");
+        const payloadThu = {
+            action: "addVoucher",
+            Ma_Phieu: maPhieuThu,
+            Ngay: date,
+            Loai: "Thu",
+            Hang_Muc: "Chuyển quỹ",
+            So_Tien: amount,
+            Phuong_Thuc: target,
+            Ma_HD: "",
+            Nguoi_Thuc_Hien: user,
+            Ghi_Chu: `Nhận quỹ từ ${source}. ${notes}`.trim()
+        };
+
+        const resThu = await postToAPI(payloadThu);
+
+        if (!resThu.success) {
+            showToast("Lỗi khi tạo phiếu thu chuyển quỹ: " + (resThu.error || "Lỗi API"), "error");
+        } else {
+            // Add Thu to local state
+            const localThu = {
+                Ma_Phieu: maPhieuThu,
+                Ngay: date,
+                Loai: "Thu",
+                Hang_Muc: "Chuyển quỹ",
+                So_Tien: amount,
+                Phuong_Thuc: target,
+                Ma_HD: "",
+                Nguoi_Thuc_Hien: user,
+                Ghi_Chu: `Nhận quỹ từ ${source}. ${notes}`.trim()
+            };
+            state.cashBook.push(localThu);
+            showToast(`Chuyển quỹ thành công! (Tạo phiếu ${maPhieuChi} và ${maPhieuThu})`, "success");
+        }
+
+        localStorage.setItem('pawnshop_cashbook', JSON.stringify(state.cashBook));
+        closeTransferModal();
+        renderCashBook();
+    } catch (error) {
+        console.error("Lỗi trong handleSaveTransfer:", error);
+        showToast("Lỗi hệ thống khi chuyển quỹ!", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+        isSubmitting = false;
+        showLoading(false);
+        syncData();
+    }
+}
+
+function getDayMonthYearText(dateStr) {
+    if (!dateStr) return "";
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return "";
+    return `Ngày ${parts[2]} tháng ${parts[1]} năm ${parts[0]}`;
+}
+
+function docSoTien(soTien) {
+    const mangSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+    
+    function docGroup3(n, showZero) {
+        let tram = Math.floor(n / 100);
+        let chuc = Math.floor((n % 100) / 10);
+        let donVi = n % 10;
+        let res = "";
+        
+        if (tram > 0 || showZero) {
+            res += mangSo[tram] + " trăm ";
+        }
+        
+        if (chuc === 0) {
+            if (donVi > 0 && (tram > 0 || showZero)) {
+                res += "lẻ ";
+            }
+        } else if (chuc === 1) {
+            res += "mười ";
+        } else {
+            res += mangSo[chuc] + " mươi ";
+        }
+        
+        if (donVi === 1) {
+            if (chuc > 1) {
+                res += "mốt";
+            } else {
+                res += "một";
+            }
+        } else if (donVi === 5) {
+            if (chuc > 0) {
+                res += "lăm";
+            } else {
+                res += "năm";
+            }
+        } else if (donVi > 0) {
+            res += mangSo[donVi];
+        }
+        return res.trim();
+    }
+    
+    if (soTien === 0) return "Không đồng";
+    
+    let str = "";
+    let absolute = Math.abs(soTien);
+    let ty = Math.floor(absolute / 1000000000);
+    absolute %= 1000000000;
+    let trieu = Math.floor(absolute / 1000000);
+    absolute %= 1000000;
+    let nghin = Math.floor(absolute / 1000);
+    let dong = absolute % 1000;
+    
+    let hasValue = false;
+    
+    if (ty > 0) {
+        str += docGroup3(ty, hasValue) + " tỷ ";
+        hasValue = true;
+    }
+    if (trieu > 0) {
+        str += docGroup3(trieu, hasValue) + " triệu ";
+        hasValue = true;
+    }
+    if (nghin > 0) {
+        str += docGroup3(nghin, hasValue) + " nghìn ";
+        hasValue = true;
+    }
+    if (dong > 0) {
+        str += docGroup3(dong, hasValue) + " đồng";
+    } else {
+        str += " đồng";
+    }
+    
+    let finalStr = str.trim().replace(/\s+/g, ' ') + " chẵn";
+    return finalStr.charAt(0).toUpperCase() + finalStr.slice(1);
+}
+
+function printVoucher(voucherId) {
+    const v = state.cashBook.find(item => item.Ma_Phieu === voucherId);
+    if (!v) {
+        showToast("Không tìm thấy dữ liệu phiếu để in!", "error");
+        return;
+    }
+    
+    const amountStr = formatVND(v.So_Tien);
+    const amountInWords = docSoTien(v.So_Tien);
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+        showToast("Vui lòng cho phép trình duyệt mở popup để in phiếu!", "warning");
+        return;
+    }
+
+    const typeTitle = v.Loai === "Thu" ? "PHIẾU THU" : "PHIẾU CHI";
+    const dayMonthYear = getDayMonthYearText(v.Ngay);
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>In Phiếu - ${v.Ma_Phieu}</title>
+        <style>
+            @media print {
+                @page {
+                    size: A5 landscape;
+                    margin: 0.5cm;
+                }
+                body {
+                    margin: 0;
+                    padding: 0;
+                }
+            }
+            body {
+                font-family: "Plus Jakarta Sans", "Outfit", "Arial", sans-serif;
+                font-size: 13px;
+                color: #000;
+                line-height: 1.4;
+                padding: 10px;
+            }
+            .header-table {
+                width: 100%;
+                margin-bottom: 15px;
+                border-collapse: collapse;
+            }
+            .header-table td {
+                vertical-align: top;
+            }
+            .shop-name {
+                font-weight: bold;
+                font-size: 14px;
+                text-transform: uppercase;
+            }
+            .shop-address {
+                font-size: 11px;
+                color: #555;
+            }
+            .voucher-title-area {
+                text-align: center;
+            }
+            .voucher-title {
+                font-weight: 800;
+                font-size: 18px;
+                margin: 0;
+                letter-spacing: 1px;
+            }
+            .voucher-sub {
+                font-size: 11px;
+                margin-top: 2px;
+                font-style: italic;
+            }
+            .voucher-meta {
+                text-align: right;
+                font-size: 11px;
+            }
+            .voucher-no {
+                font-weight: bold;
+            }
+            .content-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            .content-table td {
+                padding: 4px 0;
+                vertical-align: top;
+            }
+            .dot-leader {
+                border-bottom: 1px dotted #888;
+                display: inline-block;
+                flex-grow: 1;
+                margin-left: 5px;
+            }
+            .row-flex {
+                display: flex;
+                align-items: flex-end;
+            }
+            .label {
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .value {
+                padding-left: 5px;
+            }
+            .amount-box {
+                border: 2px solid #000;
+                padding: 5px 15px;
+                font-weight: bold;
+                font-size: 15px;
+                display: inline-block;
+                margin-top: 10px;
+            }
+            .signatures-table {
+                width: 100%;
+                margin-top: 20px;
+                text-align: center;
+                border-collapse: collapse;
+            }
+            .signatures-table td {
+                width: 25%;
+                font-size: 11px;
+            }
+            .sig-title {
+                font-weight: bold;
+            }
+            .sig-sub {
+                font-style: italic;
+                color: #555;
+                font-size: 10px;
+            }
+            .sig-space {
+                height: 55px;
+            }
+        </style>
+    </head>
+    <body>
+        <table class="header-table">
+            <tr>
+                <td style="width: 35%;">
+                    <div class="shop-name">TIỆM CẦM ĐỒ 60</div>
+                    <div class="shop-address">Địa chỉ: 60 QL1A, Bình Chiểu, Thủ Đức, TP. HCM</div>
+                    <div class="shop-address">Điện thoại: 0909.60.60.60</div>
+                </td>
+                <td class="voucher-title-area" style="width: 40%;">
+                    <h1 class="voucher-title">${typeTitle}</h1>
+                    <div class="voucher-sub">${dayMonthYear}</div>
+                </td>
+                <td class="voucher-meta" style="width: 25%;">
+                    <div>Số: <span class="voucher-no">${v.Ma_Phieu}</span></div>
+                    <div>Liên: 1 (Lưu)</div>
+                    <div>Hợp đồng: <span class="voucher-no">${v.Ma_HD || '-'}</span></div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="row-flex" style="margin-bottom: 8px;">
+            <span class="label">${v.Loai === "Thu" ? "Họ tên người nộp tiền" : "Họ tên người nhận tiền"}:</span>
+            <span class="value">${v.Loai === "Thu" ? (v.Nguoi_Thuc_Hien === "system" ? "Khách hàng" : v.Nguoi_Thuc_Hien) : v.Nguoi_Thuc_Hien}</span>
+            <span class="dot-leader"></span>
+        </div>
+
+        <div class="row-flex" style="margin-bottom: 8px;">
+            <span class="label">Hạng mục:</span>
+            <span class="value">${v.Hang_Muc}</span>
+            <span class="dot-leader"></span>
+        </div>
+
+        <div class="row-flex" style="margin-bottom: 8px;">
+            <span class="label">Lý do ${v.Loai === "Thu" ? "thu" : "chi"}:</span>
+            <span class="value">${v.Ghi_Chu || "Không có ghi chú"}</span>
+            <span class="dot-leader"></span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div class="amount-box">
+                Số tiền: ${amountStr}
+            </div>
+            <div style="flex-grow: 1; margin-left: 20px; display: flex; align-items: flex-end; height: 38px;">
+                <span class="label" style="font-style: italic;">Bằng chữ:</span>
+                <span class="value" style="font-style: italic; font-weight: bold;">${amountInWords}</span>
+                <span class="dot-leader"></span>
+            </div>
+        </div>
+
+        <div class="row-flex" style="margin-bottom: 15px;">
+            <span class="label">Phương thức thanh toán:</span>
+            <span class="value" style="font-weight: bold;">${v.Phuong_Thuc}</span>
+            <span class="dot-leader"></span>
+        </div>
+
+        <table class="signatures-table">
+            <tr>
+                <td>
+                    <div class="sig-title">Chủ tiệm / Quản lý</div>
+                    <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
+                    <div class="sig-space"></div>
+                    <div style="font-weight: bold;">admin</div>
+                </td>
+                <td>
+                    <div class="sig-title">Thủ quỹ</div>
+                    <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
+                    <div class="sig-space"></div>
+                </td>
+                <td>
+                    <div class="sig-title">${v.Loai === "Thu" ? "Người nộp tiền" : "Người nhận tiền"}</div>
+                    <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
+                    <div class="sig-space"></div>
+                </td>
+                <td>
+                    <div class="sig-title">Người lập phiếu</div>
+                    <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
+                    <div class="sig-space"></div>
+                    <div style="font-weight: bold;">${v.Nguoi_Thuc_Hien}</div>
+                </td>
+            </tr>
+        </table>
+
+        <script>
+            window.onload = function() {
+                window.print();
+            }
+        <\/script>
+    </body>
+    </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
 }

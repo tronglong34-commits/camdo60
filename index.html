@@ -163,6 +163,10 @@
                         class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-history"></i> Lịch Sử Đóng Lãi
                     </button>
+                    <button onclick="switchTab('accounting')" id="nav-accounting"
+                        class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                        <i class="fa-solid fa-wallet"></i> Sổ Quỹ Kế Toán
+                    </button>
                     <button onclick="switchTab('statistics')" id="nav-statistics"
                         class="tab-btn px-2 xl:px-3 2xl:px-4 py-2 rounded-xl lg:text-xs 2xl:text-sm font-semibold transition duration-200 flex items-center gap-1.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                         <i class="fa-solid fa-chart-line"></i> Bảng Thống Kê
@@ -171,26 +175,26 @@
 
                 <div class="flex items-center gap-1 lg:gap-1.5 2xl:gap-3 shrink-0">
                     <!-- Force Sync Button -->
-                    <button onclick="syncData(false)" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20 hover:bg-brand-500/20 hover:text-brand-300 transition duration-200 flex items-center gap-1.5" title="Làm mới & Đồng bộ dữ liệu">
+                    <button onclick="syncData(false)" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20 hover:bg-brand-500/20 hover:text-brand-300 transition duration-200 flex items-center" title="Làm mới & Đồng bộ dữ liệu">
                         <i class="fa-solid fa-rotate"></i>
-                        <span class="hidden 2xl:inline text-xs md:text-sm">Làm Mới</span>
+                        <span class="hidden">Làm Mới</span>
                     </button>
 
                     <!-- Settings Button (Hidden on Mobile/Tablet since it is in the bottom bar) -->
-                    <button onclick="openSettingsModal()" class="hidden lg:flex p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 items-center gap-1.5" title="Cài đặt hệ thống">
+                    <button onclick="openSettingsModal()" class="hidden lg:flex p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 items-center" title="Cài đặt hệ thống">
                         <i class="fa-solid fa-cog"></i>
-                        <span class="hidden 2xl:inline text-xs md:text-sm">Cài Đặt</span>
+                        <span class="hidden">Cài Đặt</span>
                     </button>
 
                     <!-- Theme Toggle Button -->
-                    <button id="theme-toggle-btn" onclick="toggleTheme()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center gap-1.5" title="Chuyển chế độ Sáng/Tối">
+                    <button id="theme-toggle-btn" onclick="toggleTheme()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition duration-200 flex items-center" title="Chuyển chế độ Sáng/Tối">
                         <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
-                        <span id="theme-toggle-text" class="hidden 2xl:inline text-xs md:text-sm">Giao diện sáng</span>
+                        <span id="theme-toggle-text" class="hidden">Giao diện sáng</span>
                     </button>
                     
                     <!-- Logout Button -->
-                    <button onclick="logout()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center gap-1.5">
-                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden 2xl:inline text-xs md:text-sm">Đăng Xuất</span>
+                    <button onclick="logout()" class="p-2 lg:p-2.5 rounded-lg lg:rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition duration-200 flex items-center">
+                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden">Đăng Xuất</span>
                     </button>
                 </div>
             </div>
@@ -527,6 +531,18 @@
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-4">
+                        <!-- Nút chuyển đổi chế độ xem -->
+                        <div class="flex items-center gap-1 bg-slate-950/40 p-1 rounded-xl border border-slate-800 shrink-0">
+                            <button type="button" id="btn-view-card" onclick="changeActiveContractsViewMode('card')"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition duration-200 bg-brand-600 text-white shadow-md shadow-brand-600/10">
+                                <i class="fa-solid fa-table-cells-large"></i> Dạng Thẻ
+                            </button>
+                            <button type="button" id="btn-view-excel" onclick="changeActiveContractsViewMode('excel')"
+                                class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200">
+                                <i class="fa-solid fa-table"></i> Dạng Excel
+                            </button>
+                        </div>
+
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-filter"></i> Lọc tài sản:</span>
                             <select id="filter-asset" onchange="filterActiveContracts()"
@@ -556,6 +572,30 @@
                 <!-- Grid Danh sách hợp đồng đang hoạt động -->
                 <div id="active-contracts-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-8">
                     <!-- Cards will be rendered dynamically here -->
+                </div>
+
+                <!-- Excel Table View of Active Contracts -->
+                <div id="active-contracts-table-container" class="hidden overflow-x-auto glass-card rounded-3xl border border-slate-800 bg-slate-900/40">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-950/20">
+                                <th class="py-4 px-4 whitespace-nowrap">Mã HĐ</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Khách Hàng</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Số Điện Thoại</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Tài Sản</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Vốn Cầm Gốc</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Lãi Tích Lũy</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Đã Đóng Lãi</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Lãi Còn Nợ</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Ngày Cầm</th>
+                                <th class="py-4 px-4 whitespace-nowrap">Trạng Thái / Ngày Trễ</th>
+                                <th class="py-4 px-4 whitespace-nowrap text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="active-contracts-table-body" class="text-xs divide-y divide-slate-800/80">
+                            <!-- Rows will be rendered dynamically here -->
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Empty State -->
@@ -765,6 +805,156 @@
                 </div>
             </div>
 
+            <!-- ==================== TAB 5: SỔ QUỸ KẾ TOÁN ==================== -->
+            <div id="tab-accounting-content" class="tab-content hidden space-y-6">
+                <div class="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-wallet text-brand-500"></i> Sổ Quỹ Kế Toán & Dòng Tiền
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Theo dõi tồn quỹ tiệm, dòng tiền mặt & chuyển khoản, quản lý chi phí vận hành và lợi nhuận.</p>
+                    </div>
+                </div>
+
+                <!-- KPI Cards Sổ quỹ -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- KPI 1: Tồn Quỹ Hiện Tại -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-brand-500">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Tồn Quỹ Thực Tế</span>
+                        <h3 id="stat-accounting-total-balance" class="text-xl sm:text-2xl font-black text-white mt-2 truncate">0đ</h3>
+                        <p class="text-[10px] text-slate-400 mt-1.5 flex flex-wrap gap-x-2">
+                            <span>Mặt: <b id="stat-accounting-cash-balance" class="text-slate-300">0đ</b></span>
+                            <span>|</span>
+                            <span>Bank: <b id="stat-accounting-bank-balance" class="text-slate-300">0đ</b></span>
+                        </p>
+                    </div>
+                    <!-- KPI 2: Tổng Thu -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Tổng Thu Sổ Quỹ</span>
+                        <h3 id="stat-accounting-total-income" class="text-xl sm:text-2xl font-black text-emerald-400 mt-2 truncate">0đ</h3>
+                        <p class="text-[10px] text-slate-400 mt-1.5 flex flex-wrap gap-x-2">
+                            <span>Mặt: <b id="stat-accounting-cash-income" class="text-emerald-500/80">0đ</b></span>
+                            <span>|</span>
+                            <span>Bank: <b id="stat-accounting-bank-income" class="text-emerald-500/80">0đ</b></span>
+                        </p>
+                    </div>
+                    <!-- KPI 3: Tổng Chi -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Tổng Chi Sổ Quỹ</span>
+                        <h3 id="stat-accounting-total-expense" class="text-xl sm:text-2xl font-black text-rose-400 mt-2 truncate">0đ</h3>
+                        <p class="text-[10px] text-slate-400 mt-1.5 flex flex-wrap gap-x-2">
+                            <span>Mặt: <b id="stat-accounting-cash-expense" class="text-rose-500/80">0đ</b></span>
+                            <span>|</span>
+                            <span>Bank: <b id="stat-accounting-bank-expense" class="text-rose-500/80">0đ</b></span>
+                        </p>
+                    </div>
+                    <!-- KPI 4: Lợi Nhuận Thực Tế (P&L) -->
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500">
+                        <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Lợi Nhuận Thực Tế</span>
+                        <h3 id="stat-accounting-net-profit" class="text-xl sm:text-2xl font-black text-amber-400 mt-2 truncate">0đ</h3>
+                        <p class="text-[10px] text-slate-400 mt-1.5 font-medium leading-tight text-slate-400">Doanh thu - Chi phí vận hành</p>
+                    </div>
+                </div>
+
+                <!-- Bộ lọc & Thao tác sổ quỹ -->
+                <div class="glass-card p-5 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-800/40 border border-slate-800">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                        </span>
+                        <input type="text" id="search-accounting" oninput="filterAccounting()"
+                            class="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-white text-sm bg-slate-900/60 border border-slate-700/50" placeholder="Tìm theo mã phiếu, HĐ, ghi chú, người thực hiện...">
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-calendar"></i> Khoảng ngày:</span>
+                            <input type="date" id="accounting-date-start" onchange="filterAccounting()"
+                                class="px-2.5 py-1.5 rounded-xl glass-input text-slate-200 text-xs bg-slate-900 border border-slate-700/50">
+                            <span class="text-xs text-slate-500">đến</span>
+                            <input type="date" id="accounting-date-end" onchange="filterAccounting()"
+                                class="px-2.5 py-1.5 rounded-xl glass-input text-slate-200 text-xs bg-slate-900 border border-slate-700/50">
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-list"></i> Loại:</span>
+                            <select id="accounting-type-filter" onchange="filterAccounting()"
+                                class="px-2.5 py-2 rounded-xl glass-input text-slate-200 text-xs bg-slate-900 border border-slate-700/50">
+                                <option value="All">Tất cả</option>
+                                <option value="Thu">Chỉ Phiếu Thu</option>
+                                <option value="Chi">Chỉ Phiếu Chi</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fa-solid fa-tag"></i> Hạng mục:</span>
+                            <select id="accounting-category-filter" onchange="filterAccounting()"
+                                class="px-2.5 py-2 rounded-xl glass-input text-slate-200 text-xs bg-slate-900 border border-slate-700/50">
+                                <option value="All">Tất cả hạng mục</option>
+                                <option value="Vốn giải ngân">Vốn giải ngân</option>
+                                <option value="Thu hồi vốn">Thu hồi vốn</option>
+                                <option value="Thu lãi">Thu lãi</option>
+                                <option value="Chi mặt bằng">Chi mặt bằng</option>
+                                <option value="Chi điện nước">Chi điện nước</option>
+                                <option value="Chi lương">Chi lương</option>
+                                <option value="Thu ngoài">Thu ngoài</option>
+                                <option value="Chi ngoài">Chi ngoài</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="openVoucherModal('Thu')" class="px-3 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs font-bold rounded-xl transition duration-200 shadow-md flex items-center gap-1">
+                                <i class="fa-solid fa-plus-circle"></i> + Phiếu Thu
+                            </button>
+                            <button onclick="openVoucherModal('Chi')" class="px-3 py-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold rounded-xl transition duration-200 shadow-md flex items-center gap-1">
+                                <i class="fa-solid fa-minus-circle"></i> - Phiếu Chi
+                            </button>
+                            <button onclick="openTransferModal()" class="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white text-xs font-bold rounded-xl transition duration-200 shadow-md flex items-center gap-1">
+                                <i class="fa-solid fa-exchange-alt"></i> ⇄ Chuyển Quỹ
+                            </button>
+                            <button onclick="exportAccountingToExcel()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold rounded-xl transition duration-200 flex items-center gap-1" title="Tải file Excel (CSV)">
+                                <i class="fa-solid fa-file-excel text-emerald-500"></i> Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bảng sổ quỹ -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-slate-800 bg-slate-800/40">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-800/80 text-slate-400 border-b border-slate-700 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="py-3 px-4">Mã Phiếu</th>
+                                    <th class="py-3 px-4">Ngày</th>
+                                    <th class="py-3 px-4">Loại</th>
+                                    <th class="py-3 px-4">Hạng Mục</th>
+                                    <th class="py-3 px-4 text-right">Số Tiền</th>
+                                    <th class="py-3 px-4">Phương Thức</th>
+                                    <th class="py-3 px-4">Mã HĐ</th>
+                                    <th class="py-3 px-4">Người Thực Hiện</th>
+                                    <th class="py-3 px-4">Ghi Chú</th>
+                                    <th class="py-3 px-4 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accounting-table-body" class="divide-y divide-slate-800 text-xs text-slate-200">
+                                <!-- Vouchers will be rendered dynamically here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="accounting-empty-state" class="glass-card p-12 rounded-3xl text-center hidden bg-slate-800/40 border border-slate-800">
+                    <div class="inline-flex p-4 bg-slate-800 text-slate-400 rounded-full mb-3">
+                        <i class="fa-solid fa-wallet text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-200">Không tìm thấy giao dịch nào</h3>
+                    <p class="text-sm text-slate-400 mt-1">Chưa có giao dịch sổ quỹ phù hợp với bộ lọc hiện tại.</p>
+                </div>
+            </div>
+
         </main>
 
         <!-- FOOTER / BOTTOM NAV (MOBILE & TABLET ONLY) -->
@@ -785,6 +975,12 @@
                 class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition duration-200">
                 <i class="fa-solid fa-history text-lg"></i>
                 <span class="text-[10px] font-medium">Lịch Sử</span>
+            </button>
+
+            <button onclick="switchTab('accounting')" id="mobile-nav-accounting"
+                class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition duration-200">
+                <i class="fa-solid fa-wallet text-lg"></i>
+                <span class="text-[10px] font-medium">Sổ Quỹ</span>
             </button>
 
             <button onclick="switchTab('statistics')" id="mobile-nav-statistics"
@@ -1363,6 +1559,160 @@
                     <button type="submit"
                         class="flex-1 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-bold rounded-xl transition duration-200 shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-save"></i> Lưu Thay Đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ==================== MODAL: LẬP PHIẾU THU / CHI ==================== -->
+    <div id="voucher-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-6 rounded-2xl glass-card shadow-2xl relative border border-slate-800 bg-slate-900">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 id="voucher-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice-dollar text-brand-500"></i> Lập Phiếu
+                </h3>
+                <button type="button" onclick="closeVoucherModal()" class="text-slate-400 hover:text-white transition duration-200">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="voucher-form" class="mt-4 space-y-4" onsubmit="handleSaveVoucher(event)">
+                <input type="hidden" id="modal-voucher-id">
+                <input type="hidden" id="modal-voucher-type">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Ngày <span class="text-red-500">*</span></label>
+                        <input type="date" id="modal-voucher-date" required
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Phương Thức <span class="text-red-500">*</span></label>
+                        <select id="modal-voucher-method" required
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50">
+                            <option value="Tiền mặt">Tiền mặt</option>
+                            <option value="Chuyển khoản">Chuyển khoản</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Hạng Mục <span class="text-red-500">*</span></label>
+                    <select id="modal-voucher-category-select" onchange="handleVoucherCategoryChange()" required
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50">
+                        <!-- Options populated dynamically -->
+                    </select>
+                    <input type="text" id="modal-voucher-category-custom" class="hidden mt-2 w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" placeholder="Nhập hạng mục tùy chỉnh...">
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Số Tiền (VND) <span class="text-red-500">*</span></label>
+                        <input type="text" id="modal-voucher-amount" required inputmode="decimal"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white font-bold text-sm text-emerald-400 bg-slate-900 border border-slate-700/50" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Mã Hợp Đồng (Nếu có)</label>
+                        <input type="text" id="modal-voucher-hd"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" placeholder="Ví dụ: HD0001">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Người Thực Hiện</label>
+                        <input type="text" id="modal-voucher-user"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" placeholder="Tên nhân viên">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Ghi Chú Chi Tiết</label>
+                    <textarea id="modal-voucher-notes" rows="2"
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" placeholder="Nhập mô tả chi tiết giao dịch..."></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeVoucherModal()"
+                        class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit"
+                        class="flex-1 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold rounded-xl text-xs transition duration-200 shadow-lg flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-save"></i> Lưu Phiếu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CHUYỂN QUỸ NỘI BỘ ==================== -->
+    <div id="transfer-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-6 rounded-2xl glass-card shadow-2xl relative border border-slate-800 bg-slate-900">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-exchange-alt text-blue-500"></i> Chuyển Quỹ Nội Bộ
+                </h3>
+                <button type="button" onclick="closeTransferModal()" class="text-slate-400 hover:text-white transition duration-200">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="transfer-form" class="mt-4 space-y-4" onsubmit="handleSaveTransfer(event)">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Ngày chuyển <span class="text-red-500">*</span></label>
+                        <input type="date" id="modal-transfer-date" required
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Người chuyển</label>
+                        <input type="text" id="modal-transfer-user" required
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" placeholder="Tên nhân viên">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Từ quỹ (Nguồn) <span class="text-red-500">*</span></label>
+                        <select id="modal-transfer-source" required onchange="handleTransferSourceChange()"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50">
+                            <option value="Tiền mặt">Tiền mặt</option>
+                            <option value="Chuyển khoản">Chuyển khoản</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Sang quỹ (Đích) <span class="text-red-500">*</span></label>
+                        <select id="modal-transfer-target" required
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50">
+                            <option value="Chuyển khoản">Chuyển khoản</option>
+                            <option value="Tiền mặt">Tiền mặt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Số Tiền Chuyển (VND) <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-transfer-amount" required inputmode="decimal"
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white font-bold text-sm text-blue-400 bg-slate-900 border border-slate-700/50" placeholder="0">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Ghi Chú Chi Tiết</label>
+                    <textarea id="modal-transfer-notes" rows="2"
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white text-xs bg-slate-900 border border-slate-700/50" placeholder="Ví dụ: Rút ngân hàng nhập quỹ tiền mặt..."></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeTransferModal()"
+                        class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition duration-200">
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit"
+                        class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl text-xs transition duration-200 shadow-lg flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-save"></i> Xác nhận chuyển
                     </button>
                 </div>
             </form>

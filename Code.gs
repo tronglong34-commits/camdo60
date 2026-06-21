@@ -115,11 +115,33 @@ function doGet(e) {
       }
     }
     
+    // Đọc Tab So_Quy
+    var sheetSoQuy = ss.getSheetByName("So_Quy");
+    var cashBook = [];
+    if (sheetSoQuy) {
+      var dataSoQuy = sheetSoQuy.getDataRange().getValues();
+      var headersSoQuy = dataSoQuy[0];
+      for (var i = 1; i < dataSoQuy.length; i++) {
+        var row = dataSoQuy[i];
+        var voucher = {};
+        for (var j = 0; j < headersSoQuy.length; j++) {
+          var key = headersSoQuy[j].toString().trim();
+          var value = row[j];
+          if (value instanceof Date) {
+            value = Utilities.formatDate(value, Session.getScriptTimeZone(), "yyyy-MM-dd");
+          }
+          voucher[key] = value;
+        }
+        cashBook.push(voucher);
+      }
+    }
+    
     var responseObj = {
       success: true,
       data: {
         contracts: contracts,
-        history: history
+        history: history,
+        cashBook: cashBook
       }
     };
     
@@ -585,6 +607,144 @@ function doPost(e) {
         }
       }
       return createJsonResponse({ success: true, url: pdfUrl });
+      
+    } else if (action === "addVoucher") {
+      var sheetSoQuy = ss.getSheetByName("So_Quy");
+      if (!sheetSoQuy) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy Tab So_Quy" });
+      }
+      
+      var lastRow = sheetSoQuy.getLastRow();
+      var loai = params.Loai || "Thu"; // 'Thu' hoặc 'Chi'
+      var prefix = loai === "Thu" ? "PT" : "PC";
+      
+      // Tìm mã phiếu tiếp theo (PT0001, PC0001, ...)
+      var maxNum = 0;
+      if (lastRow > 1) {
+        var dataSoQuy = sheetSoQuy.getRange(2, 1, lastRow - 1, 3).getValues();
+        for (var i = 0; i < dataSoQuy.length; i++) {
+          var itemMa = dataSoQuy[i][0].toString().trim();
+          var itemLoai = dataSoQuy[i][2].toString().trim();
+          if (itemLoai === loai && itemMa.indexOf(prefix) === 0) {
+            var num = parseInt(itemMa.replace(prefix, ""), 10);
+            if (!isNaN(num) && num > maxNum) {
+              maxNum = num;
+            }
+          }
+        }
+      }
+      var newVoucherId = prefix + String(maxNum + 1).padStart(4, "0");
+      
+      var rowData = [
+        newVoucherId,
+        params.Ngay || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
+        loai,
+        params.Hang_Muc || "",
+        parseFloat(params.So_Tien) || 0,
+        params.Phuong_Thuc || "Tiền mặt",
+        params.Ma_HD || "",
+        params.Nguoi_Thuc_Hien || "",
+        params.Ghi_Chu || ""
+      ];
+      
+      sheetSoQuy.appendRow(rowData);
+      
+      return createJsonResponse({
+        success: true,
+        data: {
+          Ma_Phieu: newVoucherId,
+          Ngay: rowData[1],
+          Loai: rowData[2],
+          Hang_Muc: rowData[3],
+          So_Tien: rowData[4],
+          Phuong_Thuc: rowData[5],
+          Ma_HD: rowData[6],
+          Nguoi_Thuc_Hien: rowData[7],
+          Ghi_Chu: rowData[8]
+        }
+      });
+      
+    } else if (action === "editVoucher") {
+      var sheetSoQuy = ss.getSheetByName("So_Quy");
+      if (!sheetSoQuy) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy Tab So_Quy" });
+      }
+      
+      var dataSoQuy = sheetSoQuy.getDataRange().getValues();
+      var maPhieu = params.Ma_Phieu;
+      var foundRow = -1;
+      
+      for (var i = 1; i < dataSoQuy.length; i++) {
+        if (dataSoQuy[i][0].toString().trim() === maPhieu.toString().trim()) {
+          foundRow = i + 1;
+          break;
+        }
+      }
+      
+      if (foundRow === -1) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy phiếu " + maPhieu });
+      }
+      
+      var range = sheetSoQuy.getRange(foundRow, 1, 1, 9);
+      var values = range.getValues()[0];
+      
+      if (params.Ngay !== undefined) values[1] = params.Ngay;
+      if (params.Hang_Muc !== undefined) values[3] = params.Hang_Muc;
+      if (params.So_Tien !== undefined) values[4] = parseFloat(params.So_Tien) || 0;
+      if (params.Phuong_Thuc !== undefined) values[5] = params.Phuong_Thuc;
+      if (params.Ma_HD !== undefined) values[6] = params.Ma_HD;
+      if (params.Nguoi_Thuc_Hien !== undefined) values[7] = params.Nguoi_Thuc_Hien;
+      if (params.Ghi_Chu !== undefined) values[8] = params.Ghi_Chu;
+      
+      range.setValues([values]);
+      
+      var formattedDate = values[1];
+      if (formattedDate instanceof Date) {
+        formattedDate = Utilities.formatDate(formattedDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+      
+      return createJsonResponse({
+        success: true,
+        data: {
+          Ma_Phieu: values[0],
+          Ngay: formattedDate,
+          Loai: values[2],
+          Hang_Muc: values[3],
+          So_Tien: values[4],
+          Phuong_Thuc: values[5],
+          Ma_HD: values[6],
+          Nguoi_Thuc_Hien: values[7],
+          Ghi_Chu: values[8]
+        }
+      });
+      
+    } else if (action === "deleteVoucher") {
+      var sheetSoQuy = ss.getSheetByName("So_Quy");
+      if (!sheetSoQuy) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy Tab So_Quy" });
+      }
+      
+      var dataSoQuy = sheetSoQuy.getDataRange().getValues();
+      var maPhieu = params.Ma_Phieu;
+      var foundRow = -1;
+      
+      for (var i = 1; i < dataSoQuy.length; i++) {
+        if (dataSoQuy[i][0].toString().trim() === maPhieu.toString().trim()) {
+          foundRow = i + 1;
+          break;
+        }
+      }
+      
+      if (foundRow === -1) {
+        return createJsonResponse({ success: false, error: "Không tìm thấy phiếu " + maPhieu });
+      }
+      
+      sheetSoQuy.deleteRow(foundRow);
+      
+      return createJsonResponse({
+        success: true,
+        message: "Đã xóa phiếu " + maPhieu + " thành công."
+      });
       
     } else {
       return createJsonResponse({ success: false, error: "Hành động (action) không hợp lệ." });
